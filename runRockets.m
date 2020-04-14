@@ -1,5 +1,6 @@
 tic
 %clc; clear variables; close all;
+% 157A Project
 fprintf('Optimization Started \n')
 stable = 0;
 g = 0; % good rockets
