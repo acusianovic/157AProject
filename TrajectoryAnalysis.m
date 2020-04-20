@@ -16,9 +16,7 @@ RocketDiam = 1.25; %diameter [inches]
 NozzleArea = 86.800174; %nozzle exit area [in^2]
 StructuralMass = 150;%[lbm]
 
-%%% Tank Info %%%
-
-%%% Propulsion Parameters
+%%% Propulsion Parameters %%%
 TotalImpulse = 200000; %[lbf-s]
 tb = 40; %burn time [s]
 SHR= 1.145; %specific heat ratio
@@ -30,6 +28,17 @@ Isp = Eff*(cstar.*Cf/g0); %sea level Isp [s]
 At = Itot./(P0.*Cf*Eff*tb); %throat area [in^2]
 mdot = (P0.*At/cstar)*g0; %mass flow rate [lbm/sec]
 mprop = mdot*tb; %propellant mass [lbm]
+OFRatio = 2.71;
+LO2.Mass = mprop*OFRatio/(1+OFRatio); %[lbm]
+LCH4.Mass = mprop*1/(1+OFRatio); %[lbm]
+LO2.Density = 71.2; % [lbm/ft^3]
+LCH4.Density = 26.4; % [lbm/ft3^3]
+
+%%% Tank Info %%%%
+FuelMass = LO2.Mass+LCH4.Mass; %[lbm]
+OxTank.Volume = LO2.Mass./LO2.Density; % [ft^3]
+FuelTank.Volume = LCH4.Mass./LCH4.Density; % [ft^3]
+Ptank = P0*1.25+70; % psia
 
 %%% Trajectory Initial Conditions %%%
 t0 = 0; %time [s]
@@ -38,6 +47,7 @@ x0 = 0; %drift [ft]
 vx0 = 0; %drift velocity [fts]
 vy0 = 0; %vertical velocity [ft/s] 
 Ft = mdot*Isp*g0+(Pe-Pa)*NozzleArea;
+Fg = StructuralMass+FuelMass+TankMass;
 
 %%% Loop Parameters %%%
 dt = 0.1; %time step [s]
