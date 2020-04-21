@@ -54,9 +54,11 @@ LaunchAngle = 4*pi/180; [rad]
 t = 0; %time [s]
 h = 0; %altitude [ft]
 x = 0; %drift [ft]
-vx = 0; %drift velocity [fts]
+vx = 0; %drift velocity [ft/s]
 vy = 0; %vertical velocity [ft/s] 
-
+ax = 0; %x acceleration [ft/s^2]
+ay =0; %y acceleration [ft/s%^2]
+v = sqrt(vx^2+vy^2);
 
 %%% Aerobee 150 Benchmark Override %%%
 FuelMass = 1900; % [lb] 862kg
@@ -102,7 +104,7 @@ while x0 >= 0 && step <= MaxIterations
     %Thust
     if m > DryMass %during burn
         %update ambient pressure
-        Pa = interp1(PressureAltitude,AtmosphericPressure,x(step));%[slugs/ft^3]
+        Pa = interp1(PressureAltitude,AtmosphericPressure,x(step));%[psia]
         %update thrust
         Ft = mdot*g0*Isp+(Pe-Pa)*NozzleExitArea; %[lbf]
         %update mass
@@ -117,14 +119,35 @@ while x0 >= 0 && step <= MaxIterations
     %update gravitational acceleration
     g = g0*((2.0856*10^7)/(2.0856*10^7+x(step)))^2;
     %calculate new force due to gravity
-    Fg = m*g;
+    Fg = -m*g;
     
-    %%Drag Force%%
-    if v(step) > 0
+    %Drag Force
+    %get local air density
+    rhoAir = interp1(DensityAltitude,Density,x(Step)); %[slugs/ft^3]
+    if vy(step) > 0 %ascent
+        Af = (pi/4)*RocketDiam^2;
         Cd(step) = GetCd( h(step), vy(step), L, RocketDiam, Cr, Ct, Nf, Sf, Sb,...
             FinThick, Lp, aL, APro, Spro, LN );
-        Fd = 
+        Fd = -0.5*rhoAir*v(step)^2*Cd*Af;
+    else %Descent
+        Fd = 0.5*rhoAir*v(step)^2*1.5*Af;
     end
+    
+    %%% Kinematics %%%
+    %calculate net force in each direction
+    Fx = (Ft+Fd)*sin(theta);
+    Fy = (Ft+Fd)*cos(theta)+Fg;
+    %acceleration
+    ax(step) = Fx/m;
+    ay(step) = Fy/m;
+    %velocity
+    vx(step+1) = vx(step)+ax(step)*dt;
+    vy(step+1) = vy(step)+ay(step)*dt;
+    %position
+    x(step+1) = x(step)+vx(step)*dt;
+    h(step+1) = h(step)+vy(step)*dt;
+    
+    
     
 end
 
