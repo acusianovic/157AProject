@@ -61,33 +61,36 @@ ay =0; %y acceleration [ft/s%^2]
 v = sqrt(vx^2+vy^2);
 
 %%% Aerobee 150 Benchmark Override %%%
-FuelMass = 1900; % [lb] 862kg
-DryMass = 149; % [lb] 68kg PL
-RocketDiam = 1.25*12; %[in] 0.38m
-Ft = 4046.6; %liftoff thrust[lbf] 18kN
-Isp = 198; %[s]
-m = DryMass+Fuelmass;
+FuelMass = 1900; % [lbm] 862kg
+DryMass = 149; % [lbm] 68kg PL
+m = DryMass+FuelMass; %wet mass [lbm]
 Fg = m*g0;%[lbf]
-mdot = Ft/(g0*Isp); %[slugs/s]
-NozzleExitArea = 0.296875; %[ft^2]
-LaunchAngle = 4*pi/180; %[rad]
-AOA = LaunchAngle; %angle of attack[rad]
-LT = 303; %total length [in]
-Sb = pi*RocketDiam*L;
 
+RocketDiam = 1.25*12; %[in] 0.38m
+Lt = 303; %total length [in]
+Sb = pi*RocketDiam*Lt; %body surface area [in^2}
 Cr = 39; %fin root chord [in]
 Ct = 27; %fin tip chord [in]
 FinThick = 1.1; %fin thickness [in]
 Nf = 4;%number of fins
 Sf = (16.1/2)*(Cr+Ct);
-
 Lp = 0.75; %launch lug length [in]
 aL = 262; %nose to launch lug length [in]
 Apro = Lp*0.375; %maximum cross section area of launch lug [in^2]
 Spro = 3*0.75+2*0.375; %wetted surface area of proturbance [in^2]
-
 LN = 87.8; %nose length [in]
-Lb = L-LN; %length of the body [in]
+Lb = Lt-LN; %length of the body [in]
+
+Ft = 4046.6; %liftoff thrust[lbf] 18kN
+Isp = 198; %[s]
+mdot = Ft/(g0*Isp); %[slugs/s]
+NozzleExitArea = 0.296875; %[ft^2]
+LaunchAngle = 4*pi/180; %[rad]
+AOA = LaunchAngle; %angle of attack[rad]
+ChamberPressure = 324; %[psia]
+SHR = 1.145; %specific heat ratio
+NER = 4.6; %nozzle expansion ratio 
+
 
 %%% Loop Parameters %%%
 dt = 0.1; %time step [s]
@@ -97,7 +100,7 @@ MaxIterations = 10^6; %force stop condition
 %counters
 ThrustCounter = 0; %for finding burnout parameters later
 
-while x0 >= 0 && step <= MaxIterations
+while x(step) >= 0 && step <= MaxIterations
     
     %%% Forces %%%
     
@@ -126,7 +129,7 @@ while x0 >= 0 && step <= MaxIterations
     rhoAir = interp1(DensityAltitude,Density,x(Step)); %[slugs/ft^3]
     if vy(step) > 0 %ascent
         Af = (pi/4)*RocketDiam^2;
-        Cd(step) = GetCd( h(step), vy(step), L, RocketDiam, Cr, Ct, Nf, Sf, Sb,...
+        Cd(step) = GetCd( h(step), vy(step), Lt, RocketDiam, Cr, Ct, Nf, Sf, Sb,...
             FinThick, Lp, aL, APro, Spro, LN );
         Fd = -0.5*rhoAir*v(step)^2*Cd*Af;
     else %Descent
@@ -134,6 +137,7 @@ while x0 >= 0 && step <= MaxIterations
     end
     
     %%% Kinematics %%%
+    
     %calculate net force in each direction
     Fx = (Ft+Fd)*sin(theta);
     Fy = (Ft+Fd)*cos(theta)+Fg;
@@ -147,7 +151,11 @@ while x0 >= 0 && step <= MaxIterations
     x(step+1) = x(step)+vx(step)*dt;
     h(step+1) = h(step)+vy(step)*dt;
     
+    %update time
+    t(step+1) = t(step)+dt;
     
+    %update counter
+    step = step+1;
     
 end
 
