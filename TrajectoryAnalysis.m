@@ -106,7 +106,7 @@ while h(step) >= 0 && step <= MaxIterations
     %Thust
     if m(step) > DryMass %during burn
         %update ambient pressure
-        Pa = interp1(PressureAltitude,AtmosphericPressure,x(step));%[psia]
+        Pa = interp1(PressureAltitude,AtmosphericPressure,h(step));%[psia]
         %update thrust
         Ft(step+1) = mdot*g0*Isp+(Pe-Pa)*NozzleExitArea; %[lbf]
         %update mass
@@ -129,11 +129,11 @@ while h(step) >= 0 && step <= MaxIterations
     rhoAir = interp1(DensityAltitude,Density,h(step)); %[slugs/ft^3]
     if v(step) == 0 %not moving
         Fd = 0;
-    elseif vy(step) >= 0 %ascent
+    elseif vy(step) > 0 %ascent
         Af = (pi/4)*RocketDiam^2;
-        Cd(step) = GetCd( h(step), vy(step), Lt, RocketDiam*12, Cr, Ct, Nf, Sf, Sb,...
-            FinThick, Lp, aL, APro, Spro, LN, Lb ); %convert diameter to inches
-        Fd = -0.5*rhoAir*v(step)^2*Cd*Af;
+        [ Cd(step), Mach(step),FricDrag(step) ] = GetCd( h(step), v(step), Lt, RocketDiam*12, Cr, Ct, Nf, Sf, Sb,...
+            FinThick, Lp, aL, APro, Spro, LN, Lb,step ); %convert diameter to inches
+        Fd = -0.5*rhoAir*v(step)^2*Cd(step)*Af;
     else %Descent
         Af = (pi/4)*RocketDiam^2;
         Fd = 0.5*rhoAir*v(step)^2*1.5*Af;
@@ -156,11 +156,6 @@ while h(step) >= 0 && step <= MaxIterations
     x(step+1) = x(step)+vx(step)*dt;
     h(step+1) = h(step)+vy(step)*dt;
     if h(step+1) <= 0 && x(step) == 0 %we haven't lifted off yet
-        ax(step+1) = 0;
-        ay(step+1) = 0;
-        vx(step+1) = 0;
-        vy(step+1) = 0;
-        v(step+1) = 0;
         x(step+1) = 0;
         h(step+1) = 0;
     end
