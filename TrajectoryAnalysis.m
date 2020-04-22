@@ -67,12 +67,12 @@ m = DryMass+FuelMass; %wet mass [slugs]
 
 RocketDiam = 1.25; %[ft] 0.38m
 Lt = 303; %total length [in]
-Sb = pi*RocketDiam*Lt; %body surface area [in^2]
+Sb = pi*(RocketDiam*12)*Lt; %body surface area [in^2]
 Cr = 39; %fin root chord [in]
 Ct = 27; %fin tip chord [in]
 FinThick = 1.1; %fin thickness [in]
 Nf = 4;%number of fins
-Sf = (16.1/2)*(Cr+Ct);
+Sf = (16.13/2)*(Cr+Ct); %fin surface area [in^2]
 Lp = 0.75; %launch lug length [in]
 aL = 262; %nose to launch lug length [in]
 APro = Lp*0.375; %maximum cross section area of launch lug [in^2]
@@ -83,11 +83,10 @@ Lb = Lt-LN; %length of the body [in]
 Ft = 4100; %liftoff thrust[lbf] 18kN
 Isp = 198; %[s]
 mdot = Ft/(g0*Isp); %[slugs/s]
-NozzleExitArea = 0.296875; %[ft^2]
-LaunchAngle = 0*pi/180; %[rad]
+NozzleExitArea = 42.75; %[in^2]
+LaunchAngle = 4*pi/180; %[rad]
 AOA = LaunchAngle; %angle of attack[rad]
 ChamberPressure = 324; %[psia]
-Gamma = 1.145; %specific heat ratio
 NER = 4.6; %nozzle expansion ratio 
 Pe = Pa; %assume perfectly expanded at sea level
 
@@ -123,7 +122,7 @@ while h(step) >= 0 && step <= MaxIterations
     g = g0*((2.0856*10^7)/(2.0856*10^7+h(step)))^2;
     %calculate new force due to gravity
     Fg = -m(step)*g;
-    
+
     %Drag Force
     %get local air density
     rhoAir = interp1(DensityAltitude,Density,h(step)); %[slugs/ft^3]
@@ -131,14 +130,14 @@ while h(step) >= 0 && step <= MaxIterations
         Fd = 0;
     elseif vy(step) > 0 %ascent
         Af = (pi/4)*RocketDiam^2;
-        [ Cd(step), Mach(step),FricDrag(step) ] = GetCd( h(step), v(step), Lt, RocketDiam*12, Cr, Ct, Nf, Sf, Sb,...
+        [ Cd(step), Mach(step) ] = GetCd( h(step), v(step), Lt, RocketDiam*12, Cr, Ct, Nf, Sf, Sb,...
             FinThick, Lp, aL, APro, Spro, LN, Lb,step ); %convert diameter to inches
         Fd = -0.5*rhoAir*v(step)^2*Cd(step)*Af;
     else %Descent
-        Af = (pi/4)*RocketDiam^2;
+        Af = (pi/4)*(35)^2; %[in^2]
         Fd = 0.5*rhoAir*v(step)^2*1.5*Af;
     end
-    %
+    
     
     %%% Kinematics %%%
     
@@ -155,7 +154,7 @@ while h(step) >= 0 && step <= MaxIterations
     %position
     x(step+1) = x(step)+vx(step)*dt;
     h(step+1) = h(step)+vy(step)*dt;
-    if h(step+1) <= 0 && x(step) == 0 %we haven't lifted off yet
+    if h(step+1) <= 0 && step < 100 %we haven't lifted off yet
         x(step+1) = 0;
         h(step+1) = 0;
     end
@@ -167,6 +166,17 @@ while h(step) >= 0 && step <= MaxIterations
     step = step+1;
     
 end
-
-
+%%
+figure
+plot(t,h)
+xlabel('time [s]')
+ylabel('altitude [ft]')
+%xlim([0 300])
+figure
+plot(t,vy)
+xlabel('time [s]')
+ylabel('velocity [ft/s]')
+%xlim([0 300])
+figure
+plot(x,h)
 
