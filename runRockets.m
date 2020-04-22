@@ -7,7 +7,7 @@ g = 0; % good rockets
 b = 0; % bad rockets
 n = 0;
 vg = 0;
-numGoodRockets = 1000;
+numGoodRockets = 100;
 resultRockets = struct(['Good','Bad'],{});
 % while we have less than (n) good rockets:
 fprintf('Finding good rockets... \n')
@@ -29,6 +29,7 @@ while  vg < numGoodRockets
     newRocket = getInertias(newRocket); % get center of pressure versus mach number and propellant weight
 
     newRocket = oneDOFflightTrajectory(newRocket); % get trajectory, apogee, and OTRS
+    
     
     % check if rocket stability is good (good static margin, negative CNalpha)
     newRocket = stability(newRocket);
