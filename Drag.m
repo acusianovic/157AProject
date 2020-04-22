@@ -31,7 +31,7 @@ else
     nu = 0.000157*exp(4.664e-5*h - 0.6882);
 end
 
-%% Body Friction Drag
+% Body Friction Drag
 
 Sb = pi * d * L;
 
@@ -64,7 +64,7 @@ end
 CdBody = CfFinalB*(1 + 60/(L/d)^3 + 0.0025*(L/d))*4*Sb...
     /(pi*d^2);
 
-%% Fin
+% Fin
 
 % Compressible Reynolds Number
 RnFin = (a*M*Cr)/(12*nu) * (1 + 0.0283*M - 0.043*M^2 ...
@@ -99,11 +99,11 @@ lambda = Ct/Cr;
 % Average Flat Plate Skin Friction Coeff. for each fin
 
 if lambda == 0
-   CfLambda = cfFinalF*(1+ 0.5646./log10(RnFin)); 
+   CfLambda = cfFinalF*(1+ 0.5646./log10(Re)); 
 else
-    CfLambda = CfFinalF*(log10(RnFin)).^2.6/(lambda^2 - 1) ...
-        *(lambda^2/(log10(RnFin*lambda)).^2.6 - (log10(RnFin)).^-2.6 ...
-        + 0.5646*lambda^2/(log10(RnFin*lambda)).^3.6 ...
+    CfLambda = CfFinalF*(log10(Re)).^2.6/(lambda^2 - 1) ...
+        *(lambda^2/(log10(Re*lambda)).^2.6 - (log10(Re)).^-2.6 ...
+        + 0.5646*lambda^2/(log10(Re*lambda)).^3.6 ...
         -0.5646*(log10(RnFin)).^-3.6);
 end
 
@@ -117,7 +117,7 @@ Sf = b/2*(Cr + Ct);     % Wetted Area of each fin
 CdF = CfLambda.*(1 + 60*tc^4 + 0.8*(1 + 5*xBar^2)*tc)...
     *4*nf*Sf*(pi*d^2);
 
-%% Interference Drag
+% Interference Drag
 
 % Compressible Reynolds Number
 RnInt = (a.*M.*Lp)/(12*nu) *(1 + 0.0283*M - 0.043*M.^2 + 0.2107*M.^3 ...
@@ -149,7 +149,7 @@ CfFinalID = 0.815*CfFinal.*(Lap/Lp)^-0.1243;
 % Drag Coeff. of Protuberance due to Friction
 CdP = CfFinalID*(1 + 1.798*(sqrt(Ap)/Lp)^1.5)*4*Sp/(pi*d^2);   
 
-%% Drag due to rivets, joints,....
+% Drag due to rivets, joints,....
 
 Sr = Sb + Sf + Sp;              % Total Wetted Area of Rocket
  
@@ -165,12 +165,12 @@ else
     Cde = Ke*4*Sr/(pi*d^2);
 end
     
-%% Total Skin Friction Drag
+% Total Skin Friction Drag
 
 Kf = 1.04;          % Interference Factor
 CdFriction = CdBody + Kf*CdF + Kf*CdP + Cde;
 
-%% Base Drag Coeff.
+% Base Drag Coeff.
 
 Kb = 0.0274*atan(L0/d + 0.0116);
 n = 3.6542*(L0/d)^-0.2733;
@@ -190,7 +190,7 @@ else
     CdBase = Kb*(db/d)^n/sqrt(CdFriction) + fb;
 end
     
-%% Transonic Drag
+% Transonic Drag
 
 % Transonic Divergence Mach Number
 Md = 0.0156*(Ln/d)^2 + 0.136*(Ln/d) + 0.6817;                        
@@ -226,14 +226,14 @@ else
     delCdT = 0;
 end
 
-%% Supersonic Drag
+% Supersonic Drag
 if M >= Mf
     delCdS = delCdMax;
 else
     delCdS = 0;
 end
 
-%% Total Drag Coeff.
+% Total Drag Coeff.
 
 Cd = CdBody + Kf*CdF + Kf*CdP +Cde + CdBase + delCdT + delCdS; 
 
