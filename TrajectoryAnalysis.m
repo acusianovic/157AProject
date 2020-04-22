@@ -6,10 +6,14 @@ clear variables;close all;clc
 %%% Load Atmospheric Model %%%
 load('AtmosphericPressureModel.mat', 'PressureAltitude','AtmosphericPressure');
 load('AtmosphericDensityModel.mat', 'DensityAltitude','Density');
+%convert to english units
 PressureAltitude = 3.28084*PressureAltitude; %[ft]
-DensityAltitude = 3.28084*DensityAltitude; %[ft]
+DensityAltitude1 = 3.28084*DensityAltitude; %[ft]
 AtmosphericPressure = 0.000145038*AtmosphericPressure; %[psi]
 Density = 0.00194032*Density; %[slug/ft^3]
+%interpolate data
+DensityAltitude = linspace( min(DensityAltitude1), max(DensityAltitude1), 10^5);
+Density = interp1(DensityAltitude1,Density,DensityAltitude,'spline');
 
 %%% Physical Parameters %%%
 g0 = 32.174; %sea level gravitational acceleration [ft/s^2]
@@ -90,6 +94,8 @@ ChamberPressure = 324; %[psia]
 NER = 4.6; %nozzle expansion ratio 
 Pe = Pa; %assume perfectly expanded at sea level
 
+RecoveryAltitude = 300000; %[ft]
+
 %%% Loop Parameters %%%
 dt = 0.1; %time step [s]
 step = 1; %count loop iterations
@@ -97,6 +103,7 @@ MaxIterations = 10^6; %force stop condition
 
 %counters
 ThrustCounter = 0; %for finding burnout parameters later
+ChuteDeployed = 0;
 
 while h(step) >= 0 && step <= MaxIterations
     
@@ -126,18 +133,31 @@ while h(step) >= 0 && step <= MaxIterations
     %Drag Force
     %get local air density
     rhoAir = interp1(DensityAltitude,Density,h(step)); %[slugs/ft^3]
-    if v(step) == 0 %not moving
-        Fd = 0;
-    elseif vy(step) > 0 %ascent
+    if vy(step) == 0 %pre-launch
         Af = (pi/4)*RocketDiam^2;
+        Cd(step) = 0;
+        Sign = 1;
+    elseif vy(step) > 0 %before apogee
         [ Cd(step), Mach(step) ] = GetCd( h(step), v(step), Lt, RocketDiam*12, Cr, Ct, Nf, Sf, Sb,...
             FinThick, Lp, aL, APro, Spro, LN, Lb,step ); %convert diameter to inches
-        Fd = -0.5*rhoAir*v(step)^2*Cd(step)*Af;
-    else %Descent
-        Af = (pi/4)*(35)^2; %[in^2]
-        Fd = 0.5*rhoAir*v(step)^2*1.5*Af;
+        Af = (pi/4)*RocketDiam^2; %[ft^2]
+        Sign = -1;
+    elseif vy(step) < 0 && h(step) > RecoveryAltitude && ChuteDeployed == 0 %after apogee, before chute deployment
+        [ Cd(step), Mach(step) ] = GetCd( h(step), v(step), Lt, RocketDiam*12, Cr, Ct, Nf, Sf, Sb,...
+            FinThick, Lp, aL, APro, Spro, LN, Lb,step ); %convert diameter to inches
+        Af = (pi/4)*30^2;%RocketDiam^2; %[ft^2]
+        Sign = 1;
+    else %chute out
+        if ChuteDeployed == 0
+        ChuteDeployed = 1;
+        fprintf( 'Main parachute deployed at %f s and %f ft', t(step), h(step))
+        end
+        Af = (pi/4)*24^2; %[ft^2]
+        Cd(step) = 1.5;
+        Sign = (-vy(step)/abs(vy(step)));
     end
-    
+    Fd = Sign*0.5*rhoAir*v(step)^2*Af*Cd(step);
+
     
     %%% Kinematics %%%
     
@@ -166,17 +186,22 @@ while h(step) >= 0 && step <= MaxIterations
     step = step+1;
     
 end
-%%
+
+%notable outputs
+fprintf('\n The burnout time is %f', t(ThrustCounter))
+
 figure
+subplot(3,1,1)
 plot(t,h)
-xlabel('time [s]')
-ylabel('altitude [ft]')
 %xlim([0 300])
-figure
+title('alt t')
+subplot(3,1,2)
 plot(t,vy)
-xlabel('time [s]')
-ylabel('velocity [ft/s]')
-%xlim([0 300])
+title('vy t')
+subplot(3,1,3)
+plot(t,ay)
+title('ay t')
+
 figure
-plot(x,h)
+plot(Mach,Cd)
 
