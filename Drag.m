@@ -1,19 +1,25 @@
-function [Cd] = Drag(h,L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln)
+function [Cd,M] = Drag(h,L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,d,v,Sb,Sf,Lp)
 
-% h = altitude, L is the total length of the rocket
-% xTc = the location of maximum thickness of airfoil
-% tc = maximum thickness of the fins (9% for NACA 0009)
+% h = altitude [ft]
+% L is the total length of the rocket [in]
+% xTc = the location of maximum thickness of airfoil [in]
+% tc = maximum thickness of the fins (9% for NACA 0009) [in]
 % nf = number of fin
-% Sp = Wetted Area of Protuberance(launch plug)
-% Lap = the distance from nose to Launch plug
-% Ap = the maximum cross section of protuberance
-% db = area at the base
-% L0 = length of section where the diamter is biggest
-% Le =  length from nose to end of bulging section
-% Le = L if nose doesn't bulge
-% Ln = Nosecone's length
+% Sp = Wetted Area of Protuberance(launch plug) [in^2]
+% Lap = the distance from nose to Launch plug [in]
+% Ap = the maximum cross section of protuberance [in^2]
+% db = diameter at the base [in]
+% L0 = length of section where the diamter is biggest [in]
+% Le =  length from nose to end of bulging section [in]
+% Le = L if nose doesn't bulge [in]
+% Ln = Nosecone's length [in]
+% d = rocket diameter [in^2]
+% v = velocity [ft/s]
+% Sb = total wetted area [in^2]
+% Sf = wetted fin area [in^2]
+% Lp = length of proturbance
 
-
+Le = L;
 %%% Calculate the speed of sound (ft/s)
 if h < 37000           
     a = -0.004*h + 1116.45;
@@ -31,6 +37,10 @@ elseif h <= 30000
 else
     nu = 0.000157*exp(4.664e-5*h - 0.6882);
 end
+
+%%% Mach number
+
+M = a/v;
 
 %%% Body's Friction Drag 
 
@@ -110,7 +120,7 @@ end
 
 % Drag Coeff. for all fins
 xBar = xTc/Cr;         
-Sf = b/2*(Cr + Ct);     % Wetted Area of each fin
+%Sf = b/2*(Cr + Ct);     % Wetted Area of each fin
 
 % Drag Coeff. of all fins
 CdF = CfLambda.*(1 + 60*tc^4 + 0.8*(1 + 5*xBar^2)*tc)...
