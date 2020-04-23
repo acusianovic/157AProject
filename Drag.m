@@ -109,8 +109,6 @@ else
 end
 
 % Drag Coeff. for all fins
-
-tc = 0.09;              % Maximum Thickness @ root/ Root Chord
 xBar = xTc/Cr;         
 Sf = b/2*(Cr + Ct);     % Wetted Area of each fin
 
