@@ -42,7 +42,7 @@ for i = 1:N
     D_arr(i)=D;
     
     %[rho,P_a,~] = getAtm(y,0); % slug/ft3, psi
-    [~, a, P_a, rho] = atmosisa(y/3.28);
+    [~, a, P_a, rho] = atmos(y/3.28);
     rho = rho/515.379; % slug/ft3
     P_a = P_a/101325*14.7; % psi
     
