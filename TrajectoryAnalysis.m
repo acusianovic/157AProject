@@ -6,10 +6,14 @@ clear variables;close all;clc
 %%% Load Atmospheric Model %%%
 load('AtmosphericPressureModel.mat', 'PressureAltitude','AtmosphericPressure');
 load('AtmosphericDensityModel.mat', 'DensityAltitude','Density');
+%convert to english units
 PressureAltitude = 3.28084*PressureAltitude; %[ft]
-DensityAltitude = 3.28084*DensityAltitude; %[ft]
+DensityAltitude1 = 3.28084*DensityAltitude; %[ft]
 AtmosphericPressure = 0.000145038*AtmosphericPressure; %[psi]
 Density = 0.00194032*Density; %[slug/ft^3]
+%interpolate data
+DensityAltitude = linspace( min(DensityAltitude1), max(DensityAltitude1), 10^5);
+Density = interp1(DensityAltitude1,Density,DensityAltitude,'pchip');
 
 %%% Physical Parameters %%%
 g0 = 32.174; %sea level gravitational acceleration [ft/s^2]
@@ -66,30 +70,33 @@ DryMass = 278.15/32.2; % [slugs] 68kg PL
 m = DryMass+FuelMass; %wet mass [slugs]
 
 RocketDiam = 1.25; %[ft] 0.38m
-Lt = 303; %total length [in]
-Sb = pi*RocketDiam*Lt; %body surface area [in^2]
+L = 303; %total length [in]
+Sb = pi*(RocketDiam*12)*L; %body surface area [in^2]
 Cr = 39; %fin root chord [in]
 Ct = 27; %fin tip chord [in]
-FinThick = 1.1; %fin thickness [in]
-Nf = 4;%number of fins
-Sf = (16.1/2)*(Cr+Ct);
+tc = 1.1; %fin thickness [in]
+nf = 4;%number of fins
+Sf = (16.13/2)*(Cr+Ct); %fin surface area [in^2]
 Lp = 0.75; %launch lug length [in]
-aL = 262; %nose to launch lug length [in]
-APro = Lp*0.375; %maximum cross section area of launch lug [in^2]
-Spro = 3*0.75+2*0.375; %wetted surface area of proturbance [in^2]
-LN = 87.8; %nose length [in]
-Lb = Lt-LN; %length of the body [in]
+Lap = 262; %nose to launch lug length [in]
+Ap = Lp*0.375; %maximum cross section area of launch lug [in^2]
+Sp = 3*0.75+2*0.375; %wetted surface area of proturbance [in^2]
+Ln = 87.8; %nose length [in]
+L0 = L-Ln; %length of the body [in]
+xTc = 0;
+db = RocketDiam*12; %[in] 0.38m
 
 Ft = 4100; %liftoff thrust[lbf] 18kN
 Isp = 198; %[s]
 mdot = Ft/(g0*Isp); %[slugs/s]
-NozzleExitArea = 0.296875; %[ft^2]
-LaunchAngle = 0*pi/180; %[rad]
+NozzleExitArea = 42.75; %[in^2]
+LaunchAngle = 4*pi/180; %[rad]
 AOA = LaunchAngle; %angle of attack[rad]
 ChamberPressure = 324; %[psia]
-Gamma = 1.145; %specific heat ratio
 NER = 4.6; %nozzle expansion ratio 
 Pe = Pa; %assume perfectly expanded at sea level
+
+RecoveryAltitude = 200000; %[ft]
 
 %%% Loop Parameters %%%
 dt = 0.1; %time step [s]
@@ -98,15 +105,16 @@ MaxIterations = 10^6; %force stop condition
 
 %counters
 ThrustCounter = 0; %for finding burnout parameters later
+ChuteDeployed = 0;
 
-while h(step) >= 0 && step <= MaxIterations
+while h(step) <= 300000 && step <= MaxIterations
     
     %%% Forces %%%
     
     %Thust
     if m(step) > DryMass %during burn
         %update ambient pressure
-        Pa = interp1(PressureAltitude,AtmosphericPressure,x(step));%[psia]
+        Pa = interp1(PressureAltitude,AtmosphericPressure,h(step));%[psia]
         %update thrust
         Ft(step+1) = mdot*g0*Isp+(Pe-Pa)*NozzleExitArea; %[lbf]
         %update mass
@@ -123,23 +131,69 @@ while h(step) >= 0 && step <= MaxIterations
     g = g0*((2.0856*10^7)/(2.0856*10^7+h(step)))^2;
     %calculate new force due to gravity
     Fg = -m(step)*g;
-    
+
     %Drag Force
     %get local air density
+
+    %Dynamic drag model
     rhoAir = interp1(DensityAltitude,Density,h(step)); %[slugs/ft^3]
-    if v(step) == 0 %not moving
-        Fd = 0;
-    elseif vy(step) >= 0 %ascent
+    
+    if vy(step) == 0 %pre-launch
         Af = (pi/4)*RocketDiam^2;
         Cd(step) = GetCd( h(step), vy(step), Lt, RocketDiam*12, Cr, Ct, Nf, Sf, Sb,...
             FinThick, Lp, aL, APro, Spro, LN, Lb ); %convert diameter to inches
         Fd = -0.5*rhoAir*v(step)^2*Cd*Af;
     else % Descent
         Af = (pi/4)*RocketDiam^2;
-        Fd = 0.5*rhoAir*v(step)^2*1.5*Af;
+        Cd(step) = 0;
+        Sign = 1;
+    elseif vy(step) > 0 %before apogee
+        [Cd(step),Mach(step)] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        Af = (pi/4)*RocketDiam^2; %[ft^2]
+        Sign = -1;
+    elseif vy(step) < 0 && h(step) > RecoveryAltitude && ChuteDeployed == 0 %after apogee, before chute deployment
+        [Cd(step),Mach(step)] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        Af = (pi/4)*RocketDiam^2; %[ft^2]
+        Sign = 1;
+    else %thereafter: chute out, change sign depending on direction until balance
+        if ChuteDeployed == 0
+        ChuteDeployed = 1;
+        fprintf( 'Main parachute deployed at %f s and %f ft', t(step), h(step))
+        end
+        Af = (pi/4)*24^2; %[ft^2]
+        Cd(step) = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        Sign = (-vy(step)/abs(vy(step)));
     end
-    %
+    Fd = Sign*0.5*rhoAir*v(step)^2*Af*Cd(step);
     
+
+    %Simple drag model
+    %{
+    if v(step) == 0 && ChuteDeployed == 0 %pre-launch
+        Af = (pi/4)*RocketDiam^2;
+        Cd(step) = 0;
+        Sign = 1;
+    elseif vy(step) > 0  && ChuteDeployed == 0 %before apogee
+        Cd(step) = 0.5;
+        Af = (pi/4)*RocketDiam^2; %[ft^2]
+        Sign = -1;
+    elseif vy(step) < 0 && h(step) > RecoveryAltitude && ChuteDeployed == 0 %after apogee, before chute deployment
+        Cd(step) = 0.5;
+        Af = (pi/4)*RocketDiam^2; %[ft^2]
+        Sign = 1;
+    else
+        if ChuteDeployed == 0
+        ChuteDeployed = 1;
+        fprintf( 'Main parachute deployed at %f s and %f ft', t(step), h(step))
+        AOA = 0;
+        end
+        Af = (pi/4)*30^2; %[ft^2]
+        Cd(step) = 1.75;
+        Sign = (-vy(step)/abs(vy(step)));
+    end
+    Fd = Sign*0.5*rhoAir*v(step)^2*Af*Cd(step);
+    %}
+
     %%% Kinematics %%%
     
     %calculate net force in each direction
@@ -155,12 +209,7 @@ while h(step) >= 0 && step <= MaxIterations
     %position
     x(step+1) = x(step)+vx(step)*dt;
     h(step+1) = h(step)+vy(step)*dt;
-    if h(step+1) <= 0 && x(step) == 0 %we haven't lifted off yet
-        ax(step+1) = 0;
-        ay(step+1) = 0;
-        vx(step+1) = 0;
-        vy(step+1) = 0;
-        v(step+1) = 0;
+    if h(step+1) <= 0 && step < 100 %we haven't lifted off yet
         x(step+1) = 0;
         h(step+1) = 0;
     end
@@ -173,5 +222,35 @@ while h(step) >= 0 && step <= MaxIterations
     
 end
 
-
+%notable outputs
+fprintf('\nThe burnout time is %f s', t(ThrustCounter))
+%%
+figure
+%sgtitle('Aerobee 150A, constant drag coefficients')
+grid on
+subplot(3,1,1)
+plot(t,h)
+title('Altitude vs. Time')
+xlabel('[s]')
+ylabel('[ft]')
+subplot(3,1,2)
+plot(t,vy)
+title('Verticle Velocity vs. Time')
+xlabel('[s]')
+ylabel('[ft/s]')
+xlim([0 t(ThrustCounter)+10])
+ylim([0 vy(ThrustCounter)+1000])
+subplot(3,1,3)
+plot(t,ay)
+xlim([0 t(ThrustCounter)+10]) 
+ylim([-100 800])
+title('Vertical Acceleration vs. Time')
+xlabel('[s]')
+ylabel('[ft/s^2]')
+%%
+figure
+plot(Mach,Cd)
+ylim([0 4])
+ylabel('Cd')
+xlabel('Time')
 
