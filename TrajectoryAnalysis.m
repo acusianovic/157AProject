@@ -134,7 +134,7 @@ while h(step) >= 0 && step <= MaxIterations
         Cd(step) = GetCd( h(step), vy(step), Lt, RocketDiam*12, Cr, Ct, Nf, Sf, Sb,...
             FinThick, Lp, aL, APro, Spro, LN, Lb ); %convert diameter to inches
         Fd = -0.5*rhoAir*v(step)^2*Cd*Af;
-    else %Descent
+    else % Descent
         Af = (pi/4)*RocketDiam^2;
         Fd = 0.5*rhoAir*v(step)^2*1.5*Af;
     end

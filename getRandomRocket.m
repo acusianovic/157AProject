@@ -33,9 +33,13 @@ rocket.geo.fin.cl_0 = 0; % Cl for 0 AOA for NACA 0010 airfoil
 %% Randomize Propultion Parameters
 rocket.prop.m_p = 600 + rand()*(1200-600); % propellant weight, lbm
 rocket.prop.PC = 200 + rand()*(600-200); % chamber pressure, psi
-rocket.prop.D = rocket.body.D*(0.9 +rand()*(0.9 - 0.5)); % rocket chamber OD, in
+rocket.prop.OD = rocket.geo.body.D*(0.9 +rand()*(0.9 - 0.5)); % rocket chamber OD, in
+rocket.prop.F = 3000 + rand()*(7000-3000); % thrust, lbf
 
-
+% rocket.prop.A_e = pi/4*rocket.geo.body.D^2; % exit area, max at rocket diameter
+ rocket.prop.expansion_h = 30000; % expansion altitude, maybe randomize later?
+% or possibly use this as a starting point and then once we nail down a
+% rocket we can float this to maximize altitude
 
 
 end
