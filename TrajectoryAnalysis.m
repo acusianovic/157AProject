@@ -96,7 +96,7 @@ ChamberPressure = 324; %[psia]
 NER = 4.6; %nozzle expansion ratio 
 Pe = Pa; %assume perfectly expanded at sea level
 
-RecoveryAltitude = 200000; %[ft]
+RecoveryAltitude = 300000; %[ft]
 
 %%% Loop Parameters %%%
 dt = 0.1; %time step [s]
@@ -107,7 +107,7 @@ MaxIterations = 10^6; %force stop condition
 ThrustCounter = 0; %for finding burnout parameters later
 ChuteDeployed = 0;
 
-while h(step) <= 300000 && step <= MaxIterations
+while vy(step) >= 0 && step <= MaxIterations
     
     %%% Forces %%%
     
@@ -130,7 +130,7 @@ while h(step) <= 300000 && step <= MaxIterations
     %update gravitational acceleration
     g = g0*((2.0856*10^7)/(2.0856*10^7+h(step)))^2;
     %calculate new force due to gravity
-    Fg = -m(step)*g;
+    Fg(step) = -m(step)*g;
 
     %Drag Force
     %get local air density
@@ -138,9 +138,10 @@ while h(step) <= 300000 && step <= MaxIterations
     %Dynamic drag model
     rhoAir = interp1(DensityAltitude,Density,h(step)); %[slugs/ft^3]
     
-    if vy(step) == 0 %pre-launch
+    if h(step) <= 1000 && ChuteDeployed == 0 %pre-launch and early region
         Af = (pi/4)*RocketDiam^2;
-        Cd(step) = 0;
+        Cd(step) = 0.1;
+        Mach(step) = v(step)/1116.28;
         Sign = 1;
     elseif vy(step) > 0 %before apogee
         [Cd(step),Mach(step)] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
@@ -159,9 +160,14 @@ while h(step) <= 300000 && step <= MaxIterations
         Cd(step) = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
         Sign = (-vy(step)/abs(vy(step)));
     end
-    Fd = Sign*0.5*rhoAir*v(step)^2*Af*Cd(step);
+    Fd(step) = Sign*0.5*rhoAir*v(step)^2*Af*Cd(step);
+    %override negligible densities
+    if h(step) >= 150000
+       Cd(step) = 0;
+       Fd(step) = 0;
+    end
     
-
+    
     %Simple drag model
     %{
     if v(step) == 0 && ChuteDeployed == 0 %pre-launch
@@ -192,8 +198,8 @@ while h(step) <= 300000 && step <= MaxIterations
     %%% Kinematics %%%
     
     %calculate net force in each direction
-    Fx = (Ft(step)+Fd)*sin(AOA);
-    Fy = (Ft(step)+Fd)*cos(AOA)+Fg;
+    Fx = (Ft(step)+Fd(step))*sin(AOA);
+    Fy = (Ft(step)+Fd(step))*cos(AOA)+Fg(step);
     %acceleration
     ax(step+1) = Fx/m(step);
     ay(step+1) = Fy/m(step);
@@ -221,16 +227,15 @@ end
 fprintf('\nThe burnout time is %f s', t(ThrustCounter))
 %%
 figure
-%sgtitle('Aerobee 150A, constant drag coefficients')
 grid on
 subplot(3,1,1)
-plot(t,h)
+plot(x,h)
 title('Altitude vs. Time')
 xlabel('[s]')
 ylabel('[ft]')
 subplot(3,1,2)
 plot(t,vy)
-title('Verticle Velocity vs. Time')
+title('Vertical Velocity vs. Time')
 xlabel('[s]')
 ylabel('[ft/s]')
 xlim([0 t(ThrustCounter)+10])
@@ -242,10 +247,4 @@ ylim([-100 800])
 title('Vertical Acceleration vs. Time')
 xlabel('[s]')
 ylabel('[ft/s^2]')
-%%
-figure
-plot(Mach,Cd)
-ylim([0 4])
-ylabel('Cd')
-xlabel('Time')
 
