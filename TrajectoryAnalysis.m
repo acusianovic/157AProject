@@ -142,7 +142,6 @@ while vy(step) >= 0 && step <= MaxIterations
         Af = (pi/4)*RocketDiam^2;
         Cd(step) = 0.1;
         Mach(step) = v(step)/1116.28;
-        Sign = 1;
     elseif vy(step) > 0 %before apogee
         [Cd(step),Mach(step)] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
         Af = (pi/4)*RocketDiam^2; %[ft^2]
