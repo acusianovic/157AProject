@@ -20,42 +20,6 @@ g0 = 32.174; %sea level gravitational acceleration [ft/s^2]
 Pa = 14.7; %sea level atmsopheric pressure [psia]
 LRL = 160; %launch rail length [ft]
 
-%{
-%%% Rocket Geometry %%%
-RocketDiam = 1.25; %diameter [inches]
-NozzleExitArea = 86.800174; %nozzle exit area [in^2]
-StructuralMass = 150;%[lbm]
-
-%%% Propulsion Parameters %%%
-TotalImpulse = 200000; %[lbf-s]
-tb = 40; %burn time [s]
-SHR= 1.145; %specific heat ratio
-cstar = 6015;
-Pe = 7.663; %exit pressure [psia]
-Cf = sqrt(2*SHR^2/(SHR-1)*(2/(SHR+1))^((SHR+1)/(SHR-1))*(1-(Pe./P0).^((SHR-1)/SHR))); %thrust coefficient
-Eff = 0.95; %nozzle efficiency
-Isp = Eff*(cstar.*Cf/g0); %sea level Isp [s]
-At = Itot./(P0.*Cf*Eff*tb); %throat area [in^2]
-mdot = (P0.*At/cstar)*g0; %mass flow rate [lbm/sec]
-mprop = mdot*tb; %propellant mass [lbm]
-OFRatio = 2.71;
-LO2.Mass = mprop*OFRatio/(1+OFRatio); %[lbm]
-LCH4.Mass = mprop*1/(1+OFRatio); %[lbm]
-LO2.Density = 71.2; % [lbm/ft^3]
-LCH4.Density = 26.4; % [lbm/ft3^3]
-
-%%% Tank Info %%%%
-FuelMass = LO2.Mass+LCH4.Mass; %[lbm]
-OxTank.Volume = LO2.Mass./LO2.Density; % [ft^3]
-FuelTank.Volume = LCH4.Mass./LCH4.Density; % [ft^3]
-Ptank = P0*1.25+70; % [psia]
-DryMass = StructuralMass+TankMass;
-
-%%% Trajectory Initial Conditions %%%
-Ft = mdot*Isp*g0+(Pe-Pa)*NozzleArea;
-Fg = (DryMass+FuelMass)*g0;
-LaunchAngle = 4*pi/180; [rad]
-%}
 t = 0; %time [s]
 h = 0; %altitude [ft]
 x = 0; %drift [ft]
@@ -66,7 +30,7 @@ ax = 0; %x acceleration [ft/s^2]
 ay =0; %y acceleration [ft/s^2]
 
 %%% Aerobee 150 Benchmark Override %%%
-FuelMass = 1073.7/32.2; % [slugs] 862kg
+FuelMass = 950/32.2; % [slugs] 862kg  %950 1073.7
 DryMass = 278.15/32.2; % [slugs] 68kg PL
 m = DryMass+FuelMass; %wet mass [slugs]
 
@@ -97,6 +61,7 @@ ChamberPressure = 324; %[psia]
 NER = 4.6; %nozzle expansion ratio 
 Pe = Pa; %assume perfectly expanded at sea level
 
+%%% Set altitude for recovery deployment %%%
 RecoveryAltitude = 300000; %[ft]
 
 %%% Loop Parameters %%%
@@ -141,7 +106,7 @@ while vy(step) >= 0 && step <= MaxIterations
     
     if h(step) <= 1000 && ChuteDeployed == 0 %pre-launch and early region
         Af = (pi/4)*RocketDiam^2;
-        Cd(step) = 0.1;
+        Cd(step) = 0.5;
         Mach(step) = v(step)/1116.28;
         Sign = -1;
     elseif vy(step) > 0 %before apogee
@@ -163,7 +128,7 @@ while vy(step) >= 0 && step <= MaxIterations
     end
     Fd(step) = Sign*0.5*rhoAir*v(step)^2*Af*Cd(step);
     %override negligible densities
-    if h(step) >= 150000
+    if h(step) >= 200000
        Cd(step) = 0;
        Fd(step) = 0;
     end
@@ -232,28 +197,32 @@ end
 
 %notable outputs
 fprintf('\nBurnout time = %fs', t(ThrustCounter))
-fprintf('\nOff the rail speed: %f ft/s', OTRS)
+fprintf('\nOff the rail speed: %fft/s', OTRS)
 
-%%
+%% altitude and velocity comparisons
 figure
-grid on
-subplot(3,1,1)
-plot(x,h)
-title('Altitude vs. Time')
-xlabel('[s]')
-ylabel('[ft]')
-subplot(3,1,2)
-plot(t,vy)
-title('Vertical Velocity vs. Time')
-xlabel('[s]')
-ylabel('[ft/s]')
-xlim([0 t(ThrustCounter)+10])
-ylim([0 vy(ThrustCounter)+1000])
-subplot(3,1,3)
-plot(t,ay)
-xlim([0 t(ThrustCounter)+10]) 
-ylim([-100 800])
-title('Vertical Acceleration vs. Time')
-xlabel('[s]')
-ylabel('[ft/s^2]')
+yyaxis right
+plot(t,h,'LineWidth',1.5);
+ylabel('ALTITUDE (ft)')
+ylim([0 10^6])
+yyaxis left
+plot(t,v,'LineWidth',1.5);
+ylabel('VELOCITY (ft / sec)')
+xlabel('TIME (seconds)')
+ylim([0 10^4])
+ax = gca;
+ax.Box = 'on'; 
+ax.LineWidth = 1.5;
 
+%% acceleration time plot
+figure
+plot(t,ay./32.2,'LineWidth',1.5)
+xlim([0 55]) 
+ylim([0 15])
+xlabel('TIME (seconds)')
+ylabel('ACCERLATION (g''s)')
+ax = gca;
+ax.Box = 'on'; 
+ax.LineWidth = 1.5;
+set(gca,'XTick',0:2:52);
+set(gca,'YTick',0:1:15);
