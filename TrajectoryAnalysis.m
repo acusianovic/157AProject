@@ -62,7 +62,7 @@ NER = 4.6; %nozzle expansion ratio
 Pe = Pa; %assume perfectly expanded at sea level
 
 %%% Set altitude for recovery deployment %%%
-RecoveryAltitude = 300000; %[ft]
+RecoveryAltitude = 0; %[ft]
 
 %%% Loop Parameters %%%
 dt = 0.1; %time step [s]
@@ -72,8 +72,9 @@ MaxIterations = 10^6; %force stop condition
 %counters
 ThrustCounter = 0; %for finding burnout parameters later
 ChuteDeployed = 0;
+ApogeeCounter = 0; %for finding apogee later
 
-while vy(step) >= 0 && step <= MaxIterations
+while h(step) >= 0 && step <= MaxIterations
     
     %%% Forces %%%
     
@@ -107,24 +108,27 @@ while vy(step) >= 0 && step <= MaxIterations
     if h(step) <= 1000 && ChuteDeployed == 0 %pre-launch and early region
         Af = (pi/4)*RocketDiam^2;
         Cd(step) = 0.5;
-        Mach(step) = v(step)/1116.28;
+        %Mach(step) = v(step)/1116.28;
         Sign = -1;
     elseif vy(step) > 0 %before apogee
-        [Cd(step),Mach(step)] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        [Cd(step),~] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
         Af = (pi/4)*RocketDiam^2; %[ft^2]
         Sign = -1;
+        ApogeeCounter = step;
     elseif vy(step) < 0 && h(step) > RecoveryAltitude && ChuteDeployed == 0 %after apogee, before chute deployment
-        [Cd(step),Mach(step)] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        [Cd(step),~] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
         Af = (pi/4)*RocketDiam^2; %[ft^2]
         Sign = 1;
+        AOA = 0;
     else %thereafter: chute out, change sign depending on direction until balance
         if ChuteDeployed == 0
         ChuteDeployed = 1;
         fprintf( 'Main parachute deployed at %f s and %f ft', t(step), h(step))
         end
         Af = (pi/4)*24^2; %[ft^2]
-        Cd(step) = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
-        Sign = (-vy(step)/abs(vy(step)));
+        [Cd(step), ~] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        AOA = 0;
+        Sign = 1;%(-vy(step)/abs(vy(step)));
     end
     Fd(step) = Sign*0.5*rhoAir*v(step)^2*Af*Cd(step);
     %override negligible densities
@@ -210,9 +214,9 @@ plot(t,v,'LineWidth',1.5);
 ylabel('VELOCITY (ft / sec)')
 xlabel('TIME (seconds)')
 ylim([0 10^4])
-ax = gca;
-ax.Box = 'on'; 
-ax.LineWidth = 1.5;
+ap = gca;
+ap.Box = 'on'; 
+ap.LineWidth = 1.5;
 
 %% acceleration time plot
 figure
@@ -221,8 +225,37 @@ xlim([0 55])
 ylim([0 15])
 xlabel('TIME (seconds)')
 ylabel('ACCERLATION (g''s)')
+ap = gca;
+ap.Box = 'on'; 
+ap.LineWidth = 1.5;
+set(gca,'XTick',0:2:52);
+set(gca,'YTick',0:1:15);
+
+%% altitude vs. drift plot
+
+%Main
+figure
+hold on
+plot(x,h,'LineWidth',1.5)
+xlabel('DRIFT (ft)')
+ylabel('ALTITUDE (ft)')
 ax = gca;
 ax.Box = 'on'; 
 ax.LineWidth = 1.5;
-set(gca,'XTick',0:2:52);
-set(gca,'YTick',0:1:15);
+xlim([0 3*10^5])
+ylim([0 8*10^5])
+set(gca,'XTick',0:0.5*10^5:2.5*10^5);
+set(gca,'YTick',0:10^5:8*10^5);
+
+%Labels
+plot(x(ThrustCounter),h(ThrustCounter),'s','LineWidth',1.5)
+plot(x(ApogeeCounter),h(ApogeeCounter),'s','LineWidth',1.5)
+plot(x(end-1),h(end-1),'s','LineWidth',1.5)
+text(x(ThrustCounter),h(ThrustCounter),{'    Burnout',...
+    '    t = 45.8s','    H=104700ft','    V=6448ft/s'});
+text(x(ApogeeCounter),6.5*10^5,{'    Apogee',...
+    '    t = 251s','    H=744330ft','    V=541ft/s'},...
+    'HorizontalAlignment','center');
+text(x(end-1),10^5,{' Impact',...
+    '    t = 493s','    R=48mi'},...
+    'HorizontalAlignment','center');
