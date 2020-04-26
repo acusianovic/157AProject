@@ -184,8 +184,9 @@ while vy(step) >= 0 && step <= MaxIterations %currently only calculating up to a
 end
 
 %%% Outputs %%%
-rocket.data.performance.OTRS = OTRS;
-rocket.data.performance.apogee = h(step);
+rocket.data.performance.OTRS = OTRS; %[ft/s]
+rocket.data.performance.apogee = h(step); %[ft]
+rocket.data.performance.range = x(step); %[ft]
 
 end
 
