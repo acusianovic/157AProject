@@ -112,6 +112,7 @@ while vy(step) >= 0 && step <= MaxIterations %currently only calculating up to a
         end
         Af = (pi/4)*24^2; %[ft^2]
         Cd(step) = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        AOA = 0; %manually adjust angle of attack !!!!!!!!
         Sign = (-vy(step)/abs(vy(step)));
     end
     Fd(step) = Sign*0.5*rhoAir*v(step)^2*Af*Cd(step);
