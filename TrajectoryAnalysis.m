@@ -18,6 +18,7 @@ Density = interp1(DensityAltitude1,Density,DensityAltitude,'pchip');
 %%% Physical Parameters %%%
 g0 = 32.174; %sea level gravitational acceleration [ft/s^2]
 Pa = 14.7; %sea level atmsopheric pressure [psia]
+LRL = 160; %launch rail length [ft]
 
 %{
 %%% Rocket Geometry %%%
@@ -142,6 +143,7 @@ while vy(step) >= 0 && step <= MaxIterations
         Af = (pi/4)*RocketDiam^2;
         Cd(step) = 0.1;
         Mach(step) = v(step)/1116.28;
+        Sign = -1;
     elseif vy(step) > 0 %before apogee
         [Cd(step),Mach(step)] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
         Af = (pi/4)*RocketDiam^2; %[ft^2]
@@ -214,6 +216,12 @@ while vy(step) >= 0 && step <= MaxIterations
         h(step+1) = 0;
     end
     
+    %%% find OTRS %%%
+    if sqrt(x(step)^2+h(step)^2) <= LRL
+        OTRS = v(step);
+        OTRSPosition = step;
+    end
+    
     %update time
     t(step+1) = t(step)+dt;
     
@@ -223,7 +231,9 @@ while vy(step) >= 0 && step <= MaxIterations
 end
 
 %notable outputs
-fprintf('\nThe burnout time is %f s', t(ThrustCounter))
+fprintf('\nBurnout time = %fs', t(ThrustCounter))
+fprintf('\nOff the rail speed: %f ft/s', OTRS)
+
 %%
 figure
 grid on
