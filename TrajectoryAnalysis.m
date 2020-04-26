@@ -11,7 +11,7 @@ PressureAltitude = 3.28084*PressureAltitude; %[ft]
 DensityAltitude1 = 3.28084*DensityAltitude; %[ft]
 AtmosphericPressure = 0.000145038*AtmosphericPressure; %[psi]
 Density = 0.00194032*Density; %[slug/ft^3]
-%interpolate data
+%interpolate data\
 DensityAltitude = linspace( min(DensityAltitude1), max(DensityAltitude1), 10^5);
 Density = interp1(DensityAltitude1,Density,DensityAltitude,'pchip');
 
