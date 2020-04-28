@@ -36,10 +36,11 @@ rocket.prop.T = combustion.T(PC, rocket.prop.OF); % adiabatic flame temperature,
 rocket.prop.gam = combustion.gam(PC, rocket.prop.OF); % specific heat ratio
 rocket.prop.mw = combustion.mw(PC, rocket.prop.OF); % molecular weight
 
-rocket.prop.mdot = rocket.prop.F/rocket.prop.Isp; % mass flow rate, lbm/s
+rocket.prop.t_b = rocket.prop.Itot/rocket.prop.F;
+rocket.prop.m_p = rocket.prop.Itot/rocket.prop.Isp;
+rocket.prop.mdot = rocket.prop.m_p/rocket.prop.t_b;
 rocket.prop.At = rocket.prop.mdot*rocket.prop.cstar*3.28/rocket.prop.PC/32.174; % throat area, in2
 rocket.prop.Dt = sqrt(4*rocket.prop.At/pi); % throat diameter, in
-rocket.prop.t_b = rocket.prop.m_p / rocket.prop.mdot; % burn time, seconds
 
 %% Chamber sizing
 rocket.prop.Lstar = 50; % characteristic chamber length, in, dependent on propellant
@@ -52,9 +53,11 @@ rocket.prop.ID = rocket.prop.OD - 2*rocket.prop.tc;
 rocket.prop.Ac = pi/4*rocket.prop.ID^2;
 
 rocket.prop.cont = rocket.prop.Ac/rocket.prop.At; % contraction ratio
-rocket.prop.Lfrustum = rocket.prop.ID/3; % conical frustum length, in
+rocket.prop.Lfrustum = rocket.prop.ID/5; % conical frustum length, in
 % chamber length
-rocket.prop.Lc = (rocket.prop.Vc-rocket.prop.Lfrustum*rocket.prop.Ac*(1+sqrt(1/rocket.prop.cont)+1/rocket.prop.cont))/rocket.prop.Ac;
+Vc = rocket.prop.Vc; Ac = rocket.prop.Ac;
+L1 = rocket.prop.Lfrustum; At = rocket.prop.At;
+rocket.prop.Lc = (Vc-Ac*L1)/(Ac*(1+sqrt(At/Ac)+At/Ac));
 %^ from rocket propulsion elements
 %% nozzle sizing
 gam = rocket.prop.gam;c1=gam+1;c2=gam-1;

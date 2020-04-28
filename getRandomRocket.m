@@ -3,12 +3,12 @@ function [rocket] = getRandomRocket(rocket)
 %rand_value = min_value + rand(1)*(max_value - min_value)
 
 %% Body
-rocket.geo.body.D = 7 + rand()*(18 - 7); %in, body diameter
+rocket.geo.body.D = 10 + rand()*(15 - 10); %in, body diameter
 % rocket.geo.body.L = 10 + rand()*(20 - 10); %ft, fuselage L, define length
 % later to be dependent on propellant volume
 
 %% Nosecone
-rocket.geo.nc.L = 2 + rand()*(5 - 2);
+rocket.geo.nc.L = 2 + rand()*(5 - 2); %ft
 % elliptical nosecone
 
 %% fin, NACA 0010 Airfoil
@@ -31,13 +31,16 @@ rocket.geo.fin.cl_a = 6.8209; %Cl/rad for NACA 0010 airfoil
 rocket.geo.fin.cl_0 = 0; % Cl for 0 AOA for NACA 0010 airfoil
 
 %% Randomize Propultion Parameters
-rocket.prop.m_p = 600 + rand()*(1200-600); % propellant weight, lbm
+% rocket.prop.m_p = 600 + rand()*(1200-600); % propellant weight, lbm
+% randomize burn time instead
 rocket.prop.PC = 200 + rand()*(600-200); % chamber pressure, psi
-rocket.prop.OD = rocket.geo.body.D*(0.9 +rand()*(0.9 - 0.5)); % rocket chamber OD, in
-rocket.prop.F = 3000 + rand()*(7000-3000); % thrust, lbf
+rocket.prop.OD = rocket.geo.body.D*(0.6 +rand()*(0.9 - 0.6)); % rocket chamber OD, in
+rocket.prop.Itot = 1E3*(170 + rand()*(200 - 180)); % total impulse, lbf-s
+rocket.prop.F = 1000 + rand()*(5000-2000); % thrust, lbf
+
 
 % rocket.prop.A_e = pi/4*rocket.geo.body.D^2; % exit area, max at rocket diameter
- rocket.prop.expansion_h = 30000; % expansion altitude, maybe randomize later?
+ rocket.prop.expansion_h = 1000+rand()*(50000-1000); % expansion altitude, maybe randomize later?
 % or possibly use this as a starting point and then once we nail down a
 % rocket we can float this to maximize altitude
 

@@ -3,7 +3,7 @@ function [rocket] = oneDOFflightTrajectory(rocket)
 
 % simulation parameters
 simTime = 1000;
-dt = 0.001;
+dt = 0.01;
 N = simTime/dt;
 t = 0:dt:simTime-dt;
 
@@ -69,6 +69,7 @@ for i = 1:N
         %D_p = 0.5*rho*v^2*S_p*C_dp; % parachute drag
         % no parachute for now
         dv = (D-(m/g)*g_gr)/(m/g)*dt;
+        break;
         
     end
     % Update mass, velocity, and position

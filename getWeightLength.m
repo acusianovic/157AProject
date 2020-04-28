@@ -68,7 +68,7 @@ function [rocket] = getWeightLength(rocket)
     
     %% Plumbing Weights
     W_valves = 10;
-    W_lines = 5;
+    W_lines = 2;
     
     %% TOTAL PROPULSION SYSTEM DRY WEIGHT 
     W_propulsion = W_oxtank+W_fueltank+W_engine+W_valves+W_lines;

@@ -1,5 +1,9 @@
 function combustion = getCombustion(ox,fuel,PC,OF)
-%%
+%% Inputs
+% Ox: string of liquid oxidizer name. ex 'O2'
+% Fuel: String of liquid fuel name. ex 'CH4'
+% PC: Array of chamber pressures
+% OF: Array of OF
 T = zeros(length(PC),length(OF));
 gam = zeros(length(PC),length(OF));
 cp = zeros(length(PC),length(OF));
@@ -26,8 +30,6 @@ i_o  = speciesIndex(gas,char(ox)); % get ox index
 
 oxLiquid = Oxygen();
 fuelLiquid = Methane();
-h_vox = 214*1000; % J/kg
-h_vf = 8.519*1000/mw_fuel*1000; % J/kg
 
 for j = 1:length(PC)
     for k = 1:length(phi_arr)
@@ -39,7 +41,6 @@ for j = 1:length(PC)
         x(i_o) = 2.0; % 2 moles of oxygen per mole of fuel
         set(gas,'Temperature',300,'Pressure',p,'MoleFractions',x)
         h0 = enthalpy_mass(gas); % J/kg
-        s0 = entropy_mass(gas);
         % get liquid oxygen and methane states
         set(oxLiquid,'Temperature',90,'Pressure',p);
         set(fuelLiquid,'Temperature',111,'Pressure',p);

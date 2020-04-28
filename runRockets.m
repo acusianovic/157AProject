@@ -81,6 +81,9 @@ fin_TR = zeros(g,1);
 OF = zeros(g,1);
 PC = zeros(g,1);
 Thrust = zeros(g,1);
+t_b = zeros(g,1);
+Isp = zeros(g,1);
+Itot = zeros(g,1);
 
 CL = zeros(100,g);
 CD = zeros(100,g);
@@ -101,9 +104,11 @@ for n = 1:g
    LD(n) = resultRockets(n).Good.geo.LD;
    
    Thrust(n) = resultRockets(n).Good.prop.F;
+   t_b(n) = resultRockets(n).Good.prop.t_b;
    OF(n) = resultRockets(n).Good.prop.OF;
    PC(n) = resultRockets(n).Good.prop.PC;
-    
+   Isp(n) = resultRockets(n).Good.prop.Isp;
+   Itot(n) = resultRockets(n).Good.prop.Itot;
 %    fin_S(n) =  resultRockets(n).Good.geo.fin.S;
 %    fin_AR(n) = resultRockets(n).Good.geo.fin.AR;
 %    fin_b(n) =  resultRockets(n).Good.geo.fin.b;
@@ -114,17 +119,26 @@ for n = 1:g
    
   
 end
-[m_w, wI] = sort(m_w);
 
+[m_w, wI] = sort(m_w);
 dummy = resultRockets;
 for n = 1:g
     resultRockets(n).Good = dummy(wI(n)).Good;
 end
-
 apogee = apogee(wI);
 OTRS = OTRS(wI);
 L = L(wI);
 D = D(wI);
+m_p = m_p(wI);
+m_w = m_w(wI);
+m_propulsion = m_propulsion(wI);
+m_d = m_d(wI);
+Thrust = Thrust(wI);
+t_b = t_b(wI);
+Isp = Isp(wI);
+OF = OF(wI);
+PC = PC(wI);
+    
 
 fin_S = fin_S(wI);
 fin_AR = fin_AR(wI);
@@ -134,6 +148,107 @@ fin_LE = fin_LE(wI);
 fin_sweep = fin_sweep(wI);
 fin_TR = fin_TR(wI);
 
+%% Visualize spread and find the best rocket
+%%
+figure
+bar(1:g,m_w)
+ylabel('Wet Mass, lb')
+%%
+figure
+bar(1:g,m_p)
+ylabel('Propellant Mass, lb')
+
+%%
+figure
+bar(1:g,OTRS)
+ylabel('Off the rail speed, ft/s')
+
+%%
+figure
+bar(1:g,apogee./5280)
+ylabel('Apogee, ft')
+
+%%
+figure
+bar(1:g,PC)
+ylabel('Chamber Pressure, psi')
+
+%%
+figure
+bar(1:g,Itot)
+ylabel('Total Impulse, lbf-s')
+yline(200000,'--','LineWidth',2);
+
+%%
+figure
+bar(1:g,L./12)
+ylabel('Rocket Length, ft')
+
+%%
+figure
+bar(1:g,D)
+ylabel('Rocket Diameter, in')
+
+%%
+figure
+plot(D, apogee./5280,'o','LineWidth',2)
+xlabel('Diameter, in')
+ylabel('Apogee, miles')
+
+%%
+% Higher PC -> higher tank and engine weight
+figure
+plot(PC, m_propulsion,'o','LineWidth',2)
+xlabel('Chamber Pressure, psi'); ylabel('Prop System Mass, lbm')
+
+%% Higher PC -> greater Isp
+figure
+plot(PC, Isp,'o','LineWidth',2)
+xlabel('Chamber Pressure, psi'); ylabel('Specific Impulse, s')
+grid on
+
+%% Higher PC -> less propellant needed
+figure
+plot(PC, m_p./Itot,'o','LineWidth',2)
+xlabel('Chamber Pressure, psi'); ylabel('Propellant Mass/Total Impulse, 1/s')
+grid on
+
+%%
+figure
+plot(PC, m_w,'o','LineWidth',2)
+xlabel('Chamber Pressure, psi'); ylabel('Wet Mass, lbm')
+
+%%
+figure
+plot(Thrust./m_w, apogee,'o','LineWidth',2)
+xlabel('Chamber Pressure, psi'); ylabel('Mass Fraction, dim')
+
+%%
+figure
+plot(m_propulsion, apogee./5280,'o','LineWidth',2)
+xlabel('Chamber Pressure, psi'); ylabel('Apogee, ')
+
+%%
+figure
+plot(LD, apogee,'o','LineWidth',2)
+xlabel('Chamber Pressure, psi'); ylabel('Wet Mass, lbm')
+
+%%
+figure
+hold on
+stem3(L,m_w,apogee./5280);
+xlabel('Aspect Ratio')
+ylabel('Wet Mass lbm')
+zlabel('Apogee miles')
+xlim([19 25])
+
+%%
+figure
+hold on
+stem3(LD,PC,m_w);
+xlabel('Length, ft')
+ylabel('Diameter, in')
+zlabel('Wet Mass, lbm')
 
 %%
 % figure
@@ -154,69 +269,27 @@ fin_TR = fin_TR(wI);
 % shading interp
 % set(gca, 'FontSize', 17, 'FontWeight', 'bold')
 %%
-% figure
-% x = b;
-% y = L;
-% z = v_cruise;
-% qx = linspace(min(x(:,1)),max(y),50);
-% qy = linspace(min(x(:,1)),max(y),50);
-% F = scatteredInterpolant(x(:,1),y,z(:,1));
-% [Xq,Yq] = meshgrid(qx, qy);
-% F.Method = 'natural';
-% Z = F(Xq,Yq);
-% meshc(Xq,Yq,Z)
-% zlabel('Cruise Speed ft/s')
-% xlabel('Span, ft')
-% ylabel('Length, ft')
-% shading interp
-% set(gca, 'FontSize', 17, 'FontWeight', 'bold')
-
+figure
+x = D;
+y = PC;
+z = m_w;
+qx = linspace(min(x),max(x),150);
+qy = linspace(min(y),max(y),150);
+F = scatteredInterpolant(x,y,z);
+[Xq,Yq] = meshgrid(qx, qy);
+F.Method = 'natural';
+Z = F(Xq,Yq);
+meshc(Xq,Yq,Z)
+xlabel('Diameter, in')
+ylabel('Chamber Pressure, psi')
+zlabel('Wet Mass, lbm')
+shading interp
+set(gca, 'FontSize', 17, 'FontWeight', 'bold')
 
 %%
 figure
-bar(1:g,OTRS)
-ylabel('Off the rail speed, ft/s')
+bar(1:g,Thrust)
 
-%%
-figure
-bar(1:g,m_p)
-ylabel('Propellant Mass, lb')
-
-%%
-figure
-bar(1:g,m_w)
-ylabel('Propellant Mass, lb')
-
-%%
-figure
-bar(1:g,L./12)
-ylabel('Rocket Length, ft')
-
-%%
-figure
-bar(1:g,D)
-ylabel('Rocket Diameter, in')
-
-%%
-figure
-bar(1:g,L)
-ylabel('Length, ft')
-
-
-
-%% To plot the rockets on a 3dplot
-% N=vg;%vg;
-% hf=figure('units','normalized','outerposition',[0 0 1 1]);
-% hf.ToolBar='none';
-% nS   = sqrt(N);
-% nCol = ceil(nS);
-% nRow = nCol - (nCol * nCol - N > nCol - 1);
-% for k = 1:N
-%   subplot(nRow, nCol, k);
-%   plotPlaneGeo(resultRockets(k).Good);
-%   set(gca,'XTick',[], 'YTick', [], 'ZTick', [])
-%   title(k)
-% end
 
 %%
 % figure
@@ -242,11 +315,18 @@ hold on
 scatter(LD,apogee./5280)
 yline(62,'LineWidth',3)
 
-%%
-figure
-hold on
-stem3(LD,m_w,apogee./5280);
-xlabel('Aspect Ratio')
-ylabel('Wet Mass lbm')
-zlabel('Apogee miles')
-xlim([15 25])
+
+%% To plot the rockets on a 3dplot
+% N=vg;%vg;
+% hf=figure('units','normalized','outerposition',[0 0 1 1]);
+% hf.ToolBar='none';
+% nS   = sqrt(N);
+% nCol = ceil(nS);
+% nRow = nCol - (nCol * nCol - N > nCol - 1);
+% for k = 1:N
+%   subplot(nRow, nCol, k);
+%   plotPlaneGeo(resultRockets(k).Good);
+%   set(gca,'XTick',[], 'YTick', [], 'ZTick', [])
+%   title(k)
+% end
+
