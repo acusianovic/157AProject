@@ -11,50 +11,15 @@ PressureAltitude = 3.28084*PressureAltitude; %[ft]
 DensityAltitude1 = 3.28084*DensityAltitude; %[ft]
 AtmosphericPressure = 0.000145038*AtmosphericPressure; %[psi]
 Density = 0.00194032*Density; %[slug/ft^3]
-%interpolate data
+%interpolate data\
 DensityAltitude = linspace( min(DensityAltitude1), max(DensityAltitude1), 10^5);
 Density = interp1(DensityAltitude1,Density,DensityAltitude,'pchip');
 
 %%% Physical Parameters %%%
 g0 = 32.174; %sea level gravitational acceleration [ft/s^2]
 Pa = 14.7; %sea level atmsopheric pressure [psia]
+LRL = 160; %launch rail length [ft]
 
-%{
-%%% Rocket Geometry %%%
-RocketDiam = 1.25; %diameter [inches]
-NozzleExitArea = 86.800174; %nozzle exit area [in^2]
-StructuralMass = 150;%[lbm]
-
-%%% Propulsion Parameters %%%
-TotalImpulse = 200000; %[lbf-s]
-tb = 40; %burn time [s]
-SHR= 1.145; %specific heat ratio
-cstar = 6015;
-Pe = 7.663; %exit pressure [psia]
-Cf = sqrt(2*SHR^2/(SHR-1)*(2/(SHR+1))^((SHR+1)/(SHR-1))*(1-(Pe./P0).^((SHR-1)/SHR))); %thrust coefficient
-Eff = 0.95; %nozzle efficiency
-Isp = Eff*(cstar.*Cf/g0); %sea level Isp [s]
-At = Itot./(P0.*Cf*Eff*tb); %throat area [in^2]
-mdot = (P0.*At/cstar)*g0; %mass flow rate [lbm/sec]
-mprop = mdot*tb; %propellant mass [lbm]
-OFRatio = 2.71;
-LO2.Mass = mprop*OFRatio/(1+OFRatio); %[lbm]
-LCH4.Mass = mprop*1/(1+OFRatio); %[lbm]
-LO2.Density = 71.2; % [lbm/ft^3]
-LCH4.Density = 26.4; % [lbm/ft3^3]
-
-%%% Tank Info %%%%
-FuelMass = LO2.Mass+LCH4.Mass; %[lbm]
-OxTank.Volume = LO2.Mass./LO2.Density; % [ft^3]
-FuelTank.Volume = LCH4.Mass./LCH4.Density; % [ft^3]
-Ptank = P0*1.25+70; % [psia]
-DryMass = StructuralMass+TankMass;
-
-%%% Trajectory Initial Conditions %%%
-Ft = mdot*Isp*g0+(Pe-Pa)*NozzleArea;
-Fg = (DryMass+FuelMass)*g0;
-LaunchAngle = 4*pi/180; [rad]
-%}
 t = 0; %time [s]
 h = 0; %altitude [ft]
 x = 0; %drift [ft]
@@ -65,7 +30,7 @@ ax = 0; %x acceleration [ft/s^2]
 ay =0; %y acceleration [ft/s^2]
 
 %%% Aerobee 150 Benchmark Override %%%
-FuelMass = 1073.7/32.2; % [slugs] 862kg
+FuelMass = 950/32.2; % [slugs] 862kg  %950 1073.7
 DryMass = 278.15/32.2; % [slugs] 68kg PL
 m = DryMass+FuelMass; %wet mass [slugs]
 
@@ -96,7 +61,8 @@ ChamberPressure = 324; %[psia]
 NER = 4.6; %nozzle expansion ratio 
 Pe = Pa; %assume perfectly expanded at sea level
 
-RecoveryAltitude = 200000; %[ft]
+%%% Set altitude for recovery deployment %%%
+RecoveryAltitude = 0; %[ft]
 
 %%% Loop Parameters %%%
 dt = 0.1; %time step [s]
@@ -106,8 +72,9 @@ MaxIterations = 10^6; %force stop condition
 %counters
 ThrustCounter = 0; %for finding burnout parameters later
 ChuteDeployed = 0;
+ApogeeCounter = 0; %for finding apogee later
 
-while h(step) <= 300000 && step <= MaxIterations
+while h(step) >= 0 && step <= MaxIterations
     
     %%% Forces %%%
     
@@ -130,7 +97,7 @@ while h(step) <= 300000 && step <= MaxIterations
     %update gravitational acceleration
     g = g0*((2.0856*10^7)/(2.0856*10^7+h(step)))^2;
     %calculate new force due to gravity
-    Fg = -m(step)*g;
+    Fg(step) = -m(step)*g;
 
     %Drag Force
     %get local air density
@@ -138,35 +105,39 @@ while h(step) <= 300000 && step <= MaxIterations
     %Dynamic drag model
     rhoAir = interp1(DensityAltitude,Density,h(step)); %[slugs/ft^3]
     
-    if vy(step) == 0 %pre-launch
+    if h(step) <= 1000 && ChuteDeployed == 0 %pre-launch and early region
         Af = (pi/4)*RocketDiam^2;
-        Cd(step) = GetCd( h(step), vy(step), Lt, RocketDiam*12, Cr, Ct, Nf, Sf, Sb,...
-            FinThick, Lp, aL, APro, Spro, LN, Lb ); %convert diameter to inches
-        Fd = -0.5*rhoAir*v(step)^2*Cd*Af;
-    else % Descent
-        Af = (pi/4)*RocketDiam^2;
-        Cd(step) = 0;
-        Sign = 1;
+        Cd(step) = 0.5;
+        %Mach(step) = v(step)/1116.28;
+        Sign = -1;
     elseif vy(step) > 0 %before apogee
-        [Cd(step),Mach(step)] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        [Cd(step),~] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
         Af = (pi/4)*RocketDiam^2; %[ft^2]
         Sign = -1;
+        ApogeeCounter = step;
     elseif vy(step) < 0 && h(step) > RecoveryAltitude && ChuteDeployed == 0 %after apogee, before chute deployment
-        [Cd(step),Mach(step)] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        [Cd(step),~] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
         Af = (pi/4)*RocketDiam^2; %[ft^2]
         Sign = 1;
+        AOA = 0;
     else %thereafter: chute out, change sign depending on direction until balance
         if ChuteDeployed == 0
         ChuteDeployed = 1;
         fprintf( 'Main parachute deployed at %f s and %f ft', t(step), h(step))
         end
         Af = (pi/4)*24^2; %[ft^2]
-        Cd(step) = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
-        Sign = (-vy(step)/abs(vy(step)));
+        [Cd(step), ~] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        AOA = 0;
+        Sign = 1;%(-vy(step)/abs(vy(step)));
     end
-    Fd = Sign*0.5*rhoAir*v(step)^2*Af*Cd(step);
+    Fd(step) = Sign*0.5*rhoAir*v(step)^2*Af*Cd(step);
+    %override negligible densities
+    if h(step) >= 200000
+       Cd(step) = 0;
+       Fd(step) = 0;
+    end
     
-
+    
     %Simple drag model
     %{
     if v(step) == 0 && ChuteDeployed == 0 %pre-launch
@@ -197,8 +168,8 @@ while h(step) <= 300000 && step <= MaxIterations
     %%% Kinematics %%%
     
     %calculate net force in each direction
-    Fx = (Ft(step)+Fd)*sin(AOA);
-    Fy = (Ft(step)+Fd)*cos(AOA)+Fg;
+    Fx = (Ft(step)+Fd(step))*sin(AOA);
+    Fy = (Ft(step)+Fd(step))*cos(AOA)+Fg(step);
     %acceleration
     ax(step+1) = Fx/m(step);
     ay(step+1) = Fy/m(step);
@@ -214,6 +185,12 @@ while h(step) <= 300000 && step <= MaxIterations
         h(step+1) = 0;
     end
     
+    %%% find OTRS %%%
+    if sqrt(x(step)^2+h(step)^2) <= LRL
+        OTRS = v(step);
+        OTRSPosition = step;
+    end
+    
     %update time
     t(step+1) = t(step)+dt;
     
@@ -223,34 +200,62 @@ while h(step) <= 300000 && step <= MaxIterations
 end
 
 %notable outputs
-fprintf('\nThe burnout time is %f s', t(ThrustCounter))
-%%
-figure
-%sgtitle('Aerobee 150A, constant drag coefficients')
-grid on
-subplot(3,1,1)
-plot(t,h)
-title('Altitude vs. Time')
-xlabel('[s]')
-ylabel('[ft]')
-subplot(3,1,2)
-plot(t,vy)
-title('Verticle Velocity vs. Time')
-xlabel('[s]')
-ylabel('[ft/s]')
-xlim([0 t(ThrustCounter)+10])
-ylim([0 vy(ThrustCounter)+1000])
-subplot(3,1,3)
-plot(t,ay)
-xlim([0 t(ThrustCounter)+10]) 
-ylim([-100 800])
-title('Vertical Acceleration vs. Time')
-xlabel('[s]')
-ylabel('[ft/s^2]')
-%%
-figure
-plot(Mach,Cd)
-ylim([0 4])
-ylabel('Cd')
-xlabel('Time')
+fprintf('\nBurnout time = %fs', t(ThrustCounter))
+fprintf('\nOff the rail speed: %fft/s', OTRS)
 
+%% altitude and velocity comparisons
+figure
+yyaxis right
+plot(t,h,'LineWidth',1.5);
+ylabel('ALTITUDE (ft)')
+ylim([0 10^6])
+yyaxis left
+plot(t,v,'LineWidth',1.5);
+ylabel('VELOCITY (ft / sec)')
+xlabel('TIME (seconds)')
+ylim([0 10^4])
+ap = gca;
+ap.Box = 'on'; 
+ap.LineWidth = 1.5;
+
+%% acceleration time plot
+figure
+plot(t,ay./32.2,'LineWidth',1.5)
+xlim([0 55]) 
+ylim([0 15])
+xlabel('TIME (seconds)')
+ylabel('ACCERLATION (g''s)')
+ap = gca;
+ap.Box = 'on'; 
+ap.LineWidth = 1.5;
+set(gca,'XTick',0:2:52);
+set(gca,'YTick',0:1:15);
+
+%% altitude vs. drift plot
+
+%Main
+figure
+hold on
+plot(x,h,'LineWidth',1.5)
+xlabel('DRIFT (ft)')
+ylabel('ALTITUDE (ft)')
+ax = gca;
+ax.Box = 'on'; 
+ax.LineWidth = 1.5;
+xlim([0 3*10^5])
+ylim([0 8*10^5])
+set(gca,'XTick',0:0.5*10^5:2.5*10^5);
+set(gca,'YTick',0:10^5:8*10^5);
+
+%Labels
+plot(x(ThrustCounter),h(ThrustCounter),'s','LineWidth',1.5)
+plot(x(ApogeeCounter),h(ApogeeCounter),'s','LineWidth',1.5)
+plot(x(end-1),h(end-1),'s','LineWidth',1.5)
+text(x(ThrustCounter),h(ThrustCounter),{'    Burnout',...
+    '    t = 45.8s','    H=104700ft','    V=6448ft/s'});
+text(x(ApogeeCounter),6.5*10^5,{'    Apogee',...
+    '    t = 251s','    H=744330ft','    V=541ft/s'},...
+    'HorizontalAlignment','center');
+text(x(end-1),10^5,{' Impact',...
+    '    t = 493s','    R=48mi'},...
+    'HorizontalAlignment','center');

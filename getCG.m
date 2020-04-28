@@ -1,83 +1,64 @@
-function [plane] = getCG(plane)
-%% Component locations
-body = plane.geo.body;
-wing = plane.geo.wing;
-h_tail = plane.geo.h_tail;
-v_tail = plane.geo.v_tail;
-nacelle = plane.geo.nacelle;
-weight = plane.data.weight;
+function [newrocket] =getCG(newrocket)
 
-x = zeros(11,1);
-z = zeros(11,1);
+% Assume thin wall, so CG is not affected by thickness
+% 1-D approximation
 
-%%%%%%%%%%%% FIX WING CG %%%%%%%%%%%%%%
-h = 0.52 - 0.25; %Nondimensional distance from quarter chord to hollow airfoil (2D) CG
-%Calculate CG wrt LE for each lifting surface, assumes hollow wing with
-%uniform shell thickness
-cg_wing = 0.25*wing.c + wing.b*tan(deg2rad(wing.sweep))/3 + ((2*wing.c*h/3 - wing.b*tan(deg2rad(wing.sweep))/6)/(wing.TR+1)) + 2*wing.c*h*wing.TR;
-cg_htail = 0.25*h_tail.c + h_tail.b*tan(deg2rad(h_tail.sweep))/3 + ((2*h_tail.c*h/3 - h_tail.b*tan(deg2rad(h_tail.sweep))/6)/(h_tail.TR+1)) + 2*h_tail.c*h*h_tail.TR;
-cg_vtail = 0.25*v_tail.c + v_tail.b*tan(deg2rad(v_tail.sweep))/3 + ((2*v_tail.c*h/3 - v_tail.b*tan(deg2rad(v_tail.sweep))/6)/(v_tail.TR+1)) + 2*v_tail.c*h*v_tail.TR;
+L_nose = newrocket.geo.nc.L;
+x_nose = 0.424*L_nose;  % Assume to be elliptical
 
-x(1) = wing.LE + cg_wing;   %ft, wing lcg location
-x(2) = body.L/2;              %fuselage cg location  
-x(3) = h_tail.LE + cg_htail;   %tail cg location
-x(4) = v_tail.LE + cg_vtail;   %tail cg location
-x(5) = wing.LE + wing.c/2;   %landing gear cg location
-x(6) = wing.LE + wing.c/2;          %engine cg location
-x(7) = wing.LE + wing.c/2;   %fuel systems cg location
-x(8) = wing.LE + wing.c/2;   %surface controls cg location
-x(9) = 50;                   %avionics cg location
-x(10) = wing.LE;  %fuel cg location
-%11th element is payload, at cg 2 location
+%% Body
+%D = newrocket.geo.body.D;
+L_body = newrocket.geo.length.body;
+x_body = L_nose + (L_body/2);   % from nose
 
-%% Z coordinates (wrt body axis, z axis points down)
-z(1) = -0.9*body.D/2;   %ft, wing cg location
-z(2) = 0;              %fuselage cg location  
-z(3) = -0.9*body.D/2;   %htail cg location
-z(4) = -v_tail.b/3;   %vtail cg location (estimate)
-z(5) = z(1) + nacelle.D;   %landing gear cg location
-z(6) = z(1) + nacelle.D/2;          %engine cg location
-z(7) = z(1);   %fuel systems cg location
-z(8) = z(1);   %surface controls cg location
-z(9) = 0;                   %avionics cg location
-z(10) = z(1);  %fuel cg location
-%11th element is payload, at cg 2 location
+%% Payload
+% Payload
+W_payload = 10;     % lb
+L_payload = newrocket.data.length.payload;
+x_payload = L_nose + (L_payload/2);
 
-%% Calculate wet and dry cg
-cg_x = zeros(3,1); %wet (takeoff), wet (predrop), dry (postdrop) cg: this order is so that nothing gets messed up (3rd element added later)
-cg_z = zeros(3,1);
+%% Tanks
+% OX tank
+L_Ox = newrocket.data.length.oxtank;
+x_Ox = L_nose + L_payload + (L_Ox/2);
 
-% Must calculate payload (postdrop) cg first
-weight.W(10) = weight.W(10) - weight.fuel_1;
-cg_x(3) = sum(weight.W(1:10).*x(1:10))/(weight.dry-weight.fuel_1);
-cg_z(3) = sum(weight.W(1:10).*z(1:10))/(weight.dry-weight.fuel_1);
-x(11) = cg_x(3); %payload cg location (before and after drop should be exact same)
-z(11) = cg_z(3);
+% Fuel tank
+L_fuel = newrocket.data.length.fueltank;
+x_fuel = (L_nose + L_payload + L_Ox) + (L_fuel/2);
 
-% Then for stability/stall calcs we can find predrop cg
-cg_x(2) = sum(weight.W(1:11).*x(1:11))/(weight.wet-weight.fuel_1); 
-cg_z(2) = sum(weight.W(1:11).*z(1:11))/(weight.wet-weight.fuel_1); 
+%% Engine
+L_engine = newrocket.data.length.engine;
+x_engine = (L_nose + L_payload + L_Ox + L_fuel) + (L_engine/2);
 
-% Finally go back and calculate wet (takeoff) cg
-weight.W(10) = weight.W(10) + weight.fuel_1;
-cg_x(1) = sum(weight.W(1:11).*x(1:11))/weight.wet;
-cg_z(1) = sum(weight.W(1:11).*z(1:11))/weight.wet;
+%% Fins
+h = newrocket.geo.fin.b;
+b = new.rocket.geo.fin.c;
+a = newrocket.geo.fin.TR * b;
+x_fins = (h/3) * (2*a + b)/(a + b);
+x_fins = x_fins + (newrocket.data.length.L - b);
 
-%% Return
-plane.data.weight.CGx = cg_x;
-plane.data.weight.CGz = cg_z;
-plane.data.weight.x = x;
-plane.data.weight.z = z;
+%% Force Balance
 
-%% Calculate Relevant Lengths
-% Wing
-plane.geo.wing.cg = plane.data.weight.CGx - plane.geo.wing.LE; %ft, distance from wing leading edge to CG
-plane.geo.wing.h_cg = plane.geo.wing.cg/plane.geo.wing.c; %nondimensional, distance from wing leading edge to CG
+%Ignore line and valves weight for CG balancing
 
-% Horizontal Tail
-plane.geo.h_tail.cg = plane.geo.h_tail.LE - plane.data.weight.CGx; %ft, distance from h_tail leading edge to CG
-plane.geo.h_tail.h_cg = plane.geo.h_tail.cg/plane.geo.wing.c; %nondimensional, distance from h_tail leading edge to CG
+xCG_dry = ( (newrocket.data.weight.nosecone*x_nose) ...
+    + (W_payload*x_payload) + (newrocket.data.weight.oxtank*x_Ox) ...
+    - (newrocket.data.weight.body*x_body) ...
+    - (newrocket.data.weight.fueltank*x_fuel) ...
+    - (newrocket.data.weight.engine*x_engine) ... 
+    - (newrocket.data.weight.fins*x_fins) )/newrocket.data.weight.dry;
 
-% Vertical Tail
-plane.geo.v_tail.cg = plane.geo.v_tail.LE - plane.data.weight.CGx; %ft, distance from v_tail leading edge to CG
-plane.geo.v_tail.h_cg = plane.geo.v_tail.cg/plane.geo.wing.c; %nondimensional, distance from v_tail leading edge to CG
+xCG_wet = ( (newrocket.data.weight.nosecone*x_nose) ...
+    + (W_payload*x_payload) + (newrocket.data.weight.oxtank*x_Ox) ...
+    + (newrocket.data.weight.Ox*x_Ox) ...
+    - (newrocket.data.weight.body*x_body) ...
+    - (newrocket.data.weight.Fuel*x_fuel) ...
+    - (newrocket.data.weight.fueltank*x_fuel) ...
+    - (newrocket.data.weight.engine*x_engine) ... 
+    - (newrocket.data.weight.fins*x_fins) )/newrocket.data.weight.wet;
+
+newrocket.data.CG.dry = xCG_dry;
+newrocket.data.CG.wet = xCG_wet;
+
+end
+
