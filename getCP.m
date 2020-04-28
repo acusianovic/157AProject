@@ -1,65 +1,52 @@
-function [xCP] = getCP(Shape,Ln,d,tnN,S,XS,Cr,Ct,XF,nf,AoA)
+function [newRocket] = getCP(newRocket,AoA)
 
-% Shape =  shape of nose cone. 1 for von Karman and 2 for Parabolic
-%tnN = nose cone thickness
-% nf = number of fins
-% XF = distance from Nose to LE of root chord
-% S = semi-span
-% XS = Chord's LE to Tip's LE
-% v = velocity
+% Need to include AoA
+d = newRocket.geo.body.D/12;          % Rocket diameter, ft
 
-%%% Nose Cone
+%% Nose Cone
+Ln = newRocket.geo.nc.L;           % Nose Cone length, ft
+Shape = newRocket.geo.nc.Shape;    % Nose Cone Shape
+V = newRocket.geo.nc.V;            % Nose Cone Volume, ft^3
 
-if Shape == 1
-    % Von Karman Nose Cone
+if Shape == 1           % Von Karman
     x = 0:0.1:Ln;
     theta = acos( 1 - (2*x)/Ln);
     R = d/2;
     yN = (R/sqrt(pi)) * sqrt(theta - sin(2.*theta)/2);
-    
-    yInnerN = yN - tnN;
-    
-    for ii = 1:length(yN)
-        if yInnerN(ii) < 0
-            yInnerN(ii) = 0;
-        end
-    end
-    
-    % Derivative of yN
+ % Derivative of yN
     dyN = zeros(1,length(yN));
     dyN(1) = (yN(2) - yN(1))/dx;
     dyN(length(yN)) = (yN(length(yN)) - yN(length(yN)-1))/dx;
     for ii = 2:length(yN)-1
         dyN(ii) = ( yN(ii+1) - yN(ii) )/ dx;
     end
+ % Surface Area of Nose Cone(ft^2)
+    SA_nose = 2*pi*trapz(x,yN.*sqrt(1 + dyN.^2));          
+ % Nose Cone Area at its base(ft^2)
+    A = (pi/4) * d^2;   
+ % Center of Pressure of Nose Cone (ft)
+    xN = (Ln*A - V)/A;
     
-    % Surface Area of Nose Cone
-    SANose = 2*pi*trapz(x,yN.*sqrt(1 + dyN.^2));
+elseif Shape  == 2          % 1/2 Power
+    xN = 0.5 * Ln;
     
-    % Nose Cone Area at its base
-    ANose = (pi/4) * d^2;
-    
-    % Rotating curves around x axis
-    VOuter = pi*trapz(x,yN);
-    VInner = pi*trapz(x,yInnerN);
-    
-    VNose = VOuter - VInner;
-    
-    % Center of Pressure of Nose Cone
-    xCpNose = (Ln*ANose - VNose)/ANose;
-elseif Shape  == 2
-    % Parabolic Nose Cone
-    xCpNose = 0.5 * Ln;
+elseif Shape == 3           % Elliptical
+    xN = 0.333 * Ln;
 end
 
-
-%%% Fin 
-
+%% Fin 
+nf = newRocket.geo.fin.n;          % Number of fins
 if nf == 3
     beta = 13.85;
 elseif nf == 4
     beta = 16;
 end
+
+S = newRocket.geo.fin.b;     % Semipan of fin, ft
+Cr = newRocket.geo.fin.c;      % Root Chord, ft
+Ct = new.rocket.geo.fin.TR*Cr;  % Tip Chord, ft
+XS = S*tand(rocket.geo.fin.sweep);  % Sweep length, ft
+XF = newRocket.geo.fin.LE;            % Fin location, ft
 
 % Fin/BOdy Interference Factor
 Kfb = 1 + d/(2*S + d);
@@ -78,24 +65,27 @@ xF = XF + (XS/3)*(Cr + 2*Ct)/(Cr + Ct) +...
     (1/6)*(Cr + Ct - (Cr*Ct)/(Cr + Ct));
 
 
-%%% Lifting Body
+%% Lifting Body
 
 % Body length
-Lb = (XF - LN) + Cr;       
+Lb = (XF - Ln) + Cr;       
 
 % Normal Coeff. of Body
 CnaB = (4/pi) * (Lb/d).* AoA;
 
 % Location of Normal Force of Body
-xB = LN + (Lb/2);
+xB = Ln + (Lb/2);
 
-%%% Total Cp
+%% Total Cp
 
 % Total normal force on rocket
 CnaT = CnaN + CnaFB + CnaB;
 
 % Center of Press.
 xCP = (CnaN*xN + CnaFB*xF + CnaB*xB)/CnaT;
+
+newRocket.aero.cp = xCP;
+newRocket.aero.nc.SA = SA_nose;
 
 
 end
