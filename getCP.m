@@ -1,7 +1,11 @@
 function [rocket] = getCP(rocket,AoA)
+if ~isnumeric(AoA)
+    AoA = 4*pi/180;
+end
 
 % Need to include AoA
 d = rocket.geo.body.D/12;          % Rocket diameter, ft
+CnaN = 2.0;                        % /rad
 
 %% Nose Cone
 Ln = rocket.geo.nc.L;           % Nose Cone length, ft
