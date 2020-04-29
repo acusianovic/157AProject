@@ -15,19 +15,19 @@ function [rocket] = getWeightLength(rocket)
     %% Propellant Tank Weights
     rho_al = 168.555; % aluminum 6061-T6 density, lbm/ft3
     % Oxygen Tank
-    D = rocket.geo.body.D;
-    t = rocket.prop.t_ox;
-    L = rocket.prop.L_ox;
-    L_oxtank = 12*L+D; % tank length, inches
-    V1 = pi/4*(D^2-(D-2*t)^2)*L; % cylindrical section metal volume, in3
+    D = rocket.geo.body.D; % in
+    t = rocket.prop.t_ox; % in
+    L_cyl = rocket.prop.L_ox - D; % in
+    L_oxtank = rocket.prop.L_ox; % tank length, inches
+    V1 = pi/4*(D^2-(D-2*t)^2)*L_cyl; % cylindrical section metal volume, in3
     V2 = 4*pi/3*((D/2)^3-((D-2*t)/2)^3); % spherical section metal volume, in3
     W_oxtank = (V1+V2)*rho_al/12^3; % lbm
     % Fuel tank
-    t = rocket.prop.t_fuel;
-    L = rocket.prop.L_fuel;
-    L_fueltank = 12*L+D; % tank length, inches
-    V1 = pi/4*(D^2-(D-2*t)^2)*L; % cylindrical section metal volume
-    V2 = 4*pi/3*((D/2)^3-((D-2*t)/2)^3); % spherical section metal volume
+    t = rocket.prop.t_fuel;% in
+    L_cyl = rocket.prop.L_fuel - D; % cyldinrical section, inches
+    L_fueltank = rocket.prop.L_fuel; % tank length, inches
+    V1 = pi/4*(D^2-(D-2*t)^2)*L_cyl; % cylindrical section metal volume, in3
+    V2 = 4*pi/3*((D/2)^3-((D-2*t)/2)^3); % spherical section metal volume, in3
     W_fueltank = (V1+V2)*rho_al/12^3; % lbm
     %% Propellant Weights
     W_ox = rocket.prop.m_ox;
@@ -57,7 +57,7 @@ function [rocket] = getWeightLength(rocket)
     L_body = L_payload+L_oxtank+L_fueltank+L_engine;
     V_body = (pi/4) * ((D+rocket.geo.nc.tn)^2 - D^2);
     %W_body = V_body * rho_al; % change density later
-    W_body = 80;
+    W_body = 70;
     %% Fin Weight
     S = rocket.geo.wing.S;                  %wing area, ft^2   % 
     AR = rocket.geo.wing.AR;                %aspect ratio
@@ -68,8 +68,8 @@ function [rocket] = getWeightLength(rocket)
     thickness_ratio_wing = rocket.geo.wing.ThR;          %Maximum Thickness Ratio (GIVEN)
     v_max = rocket.data.requirements.v_max*0.593;        %FIX UNITS         %kts   %Equivalent Vmax at SL
     %W_wing = 96.948 * ((Weight * N/10^5)^0.65*(AR/cos(sweep_angle))^0.57*(S/100)^0.61*((1 + taper_ratio)/(2*thickness_ratio_wing))^0.36*(1+v_max/500)^0.5)^0.993;
-    W_fins = 14*rocket.geo.fin.n; % lbm, from aerobee
-    rocket.geo.fin.LE = L_body - rocket.geo.fin.c; % place fin at bottom of the rocket
+    W_fins = 12*rocket.geo.fin.n; % lbm, from aerobee
+    rocket.geo.fin.LE = L_body - rocket.geo.fin.c*12; % place fin at bottom of the rocket
     
     %% TOTAL STRUCTURAL WEIGHT
     %TODO: add a better estimate of structural support, carbon fibre,
@@ -108,7 +108,8 @@ function [rocket] = getWeightLength(rocket)
     rocket.data.length.engine = L_engine;
     rocket.data.length.oxtank = L_oxtank;
     rocket.data.length.fueltank = L_fueltank;
-    rocket.geo.length.body = L_body;    % Body lengthm inches
+    rocket.geo.body.L = L_body;    % Body lengthm inches
+    rocket.data.length.body = L_body;    % Body lengthm inches
     rocket.geo.LD = rocket.data.length.L/rocket.geo.body.D;
 
     

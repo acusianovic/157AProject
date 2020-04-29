@@ -15,17 +15,12 @@ else
 end
 
 %% isStable
-% stabilityGood = false;
-% %rocket.data.stability.yaw_is_stable = 1;
-% if rocket.data.stability.is_stable && rocket.data.stability.yaw_is_stable 
-%     stabilityGood = true;
-%     %rocket.data.stability.stall = 0;
-%     if rocket.data.stability.stall
-%         stabilityGood = false;
-%     end
-% end
-
-
+if rocket.aero.SM_dry >= 1.25 && rocket.aero.SM_wet >= 1.25
+    stabilityGood = true;
+else
+    stabilityGood = false;
+end
+    
 
 %% geometry good
 if rocket.geo.LD <= 20
@@ -39,11 +34,11 @@ end
 %% Overall Good
 rocketGood = false;
 
-if apogeeGood && otrsGood && arGood
+if apogeeGood && otrsGood && arGood && stabilityGood
     rocketGood = true;
 end
 
-goodArray = [apogeeGood, otrsGood, arGood];
+goodArray = [apogeeGood, otrsGood, arGood, stabilityGood];
 
 end
 

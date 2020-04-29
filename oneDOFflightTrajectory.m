@@ -111,6 +111,7 @@ end
 
 rocket.data.performance.OTRS = OTRS;
 rocket.data.performance.apogee = apogee;
-
+rocket.data.performance.Mmax = max(M_arr); % mach number
+rocket.data.performance.Vmax = max(v_arr); % ft/s
 
 end

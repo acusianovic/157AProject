@@ -3,7 +3,7 @@ function [rocket] = getCG(rocket)
 % Assume thin wall, so CG is not affected by thickness
 % 1-D approximation
 
-L_nose = rocket.geo.nc.L;
+L_nose = rocket.geo.nc.L*12; % in
 x_nose = 0.424*L_nose;  % Assume to be elliptical
 
 %% Body
@@ -31,8 +31,8 @@ L_engine = rocket.data.length.engine;
 x_engine = (L_nose + L_payload + L_Ox + L_fuel) + (L_engine/2);
 
 %% Fins
-h = rocket.geo.fin.b;
-b = rocket.geo.fin.c;
+h = rocket.geo.fin.b*12;
+b = rocket.geo.fin.c*12;
 a = rocket.geo.fin.TR * b;
 x_fins = (h/3) * (2*a + b)/(a + b);
 x_fins = x_fins + (rocket.data.length.L - b);

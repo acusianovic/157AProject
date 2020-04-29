@@ -7,12 +7,12 @@ g = 0; % good rockets
 b = 0; % bad rockets
 n = 0;
 vg = 0;
-numGoodRockets = 50;
+numGoodRockets = 100;
 resultRockets = struct(['Good','Bad'],{});
 % while we have less than (n) good rockets:
 fprintf('Finding good rockets... \n')
 
-boolArray = zeros(1,3);
+boolArray = zeros(1,4);
 while  g < numGoodRockets
     fprintf('.')
     if mod(n,100) == 0
@@ -24,12 +24,12 @@ while  g < numGoodRockets
     newRocket = getPropulsionDetails(newRocket); % initialize rocket propulsion
     newRocket = getWeightLength(newRocket); % estimate rocket weight and length
     newRocket = getCP(newRocket); % get center of pressure versus angle of attack
-    %% TODO: get CGs and inertias to use for stability
-    %newRocket = getCG(newRocket); % get CG versus propellant weight
+    newRocket = getCG(newRocket); % get CG for dry mass and wet mass
     %newRocket = getInertias(newRocket); % get center of pressure versus mach number and propellant weight
 
     newRocket = oneDOFflightTrajectory(newRocket); % get trajectory, apogee, and OTRS
-    
+    newRocket = stability(newRocket); % static stability
+   
     % calculate rocket stability parameters (static margin)
     %TODO: newRocket = stability(newRocket);
     
@@ -54,7 +54,7 @@ fprintf('%d bad rockets discarded \n',b)
 badfails = n - boolArray;
 figure
 bar(badfails)
-set(gca,'xticklabel',{'apogeeBad', 'otrsBad', 'arBad'})
+set(gca,'xticklabel',{'apogeeBad', 'otrsBad', 'arBad','stabilityBad'})
 
 %% initialize data variables
 W = zeros(g,1);
@@ -65,6 +65,7 @@ m_propulsion = zeros(g,1);
 
 apogee = zeros(g,1);
 OTRS = zeros(g,1);
+M = zeros(g,1);
 L = zeros(g,1);
 D = zeros(g,1);
 fin_S = zeros(g,1);
@@ -96,6 +97,7 @@ for n = 1:g
    
    apogee(n) =  resultRockets(n).Good.data.performance.apogee; % ft
    OTRS(n) = resultRockets(n).Good.data.performance.OTRS;
+   M(n) = resultRockets(n).Good.data.performance.Mmax;
    L(n) =  resultRockets(n).Good.data.length.L;
    D(n) = resultRockets(n).Good.geo.body.D;
    LD(n) = resultRockets(n).Good.geo.LD;
@@ -125,6 +127,7 @@ end
 
 apogee = apogee(wI);
 OTRS = OTRS(wI);
+M = M(wI);
 L = L(wI);
 D = D(wI);
 m_p = m_p(wI);
@@ -166,6 +169,11 @@ ylabel('Mass Fraction')
 figure
 bar(1:g,Thrust)
 ylabel('Thrust')
+
+%%
+figure
+bar(1:g,M)
+ylabel('Max Mach Number')
 
 %%
 figure
@@ -243,17 +251,17 @@ xlabel('Chamber Pressure, psi'); ylabel('Apogee, ')
 
 %%
 figure
-plot(LD, apogee,'o','LineWidth',2)
-xlabel('Chamber Pressure, psi'); ylabel('Wet Mass, lbm')
+plot(LD, apogee./5280,'o','LineWidth',2)
+xlabel('LD'); ylabel('Apogee, miles')
 
 %%
 figure
 hold on
-stem3(L,m_w,apogee./5280);
+stem3(LD,m_w,apogee./5280);
 xlabel('Aspect Ratio')
 ylabel('Wet Mass lbm')
 zlabel('Apogee miles')
-xlim([19 25])
+%xlim([19 25])
 
 %%
 figure
@@ -286,8 +294,8 @@ figure
 x = D;
 y = PC;
 z = m_w;
-qx = linspace(min(x),max(x),150);
-qy = linspace(min(y),max(y),150);
+qx = linspace(min(x),max(x),100);
+qy = linspace(min(y),max(y),100);
 F = scatteredInterpolant(x,y,z);
 [Xq,Yq] = meshgrid(qx, qy);
 F.Method = 'natural';
@@ -296,6 +304,7 @@ meshc(Xq,Yq,Z)
 xlabel('Diameter, in')
 ylabel('Chamber Pressure, psi')
 zlabel('Wet Mass, lbm')
+zlim([500 800])
 shading interp
 set(gca, 'FontSize', 17, 'FontWeight', 'bold')
 

@@ -1,5 +1,5 @@
 function rocket = getCP(rocket)
-AoA = 0:0.25:30;
+AoA = 0:0.25:30;                 % / deg
 
 % Need to include AoA
 d = rocket.geo.body.D/12;          % Rocket diameter, ft
@@ -45,20 +45,20 @@ elseif nf == 4
     beta = 16;
 end
 
-S = rocket.geo.fin.b;     % Semipan of fin, ft
+b = rocket.geo.fin.b;     % Semipan of fin, ft
 Cr = rocket.geo.fin.c;      % Root Chord, ft
 Ct = rocket.geo.fin.TR*Cr;  % Tip Chord, ft
-XS = S*tand(rocket.geo.fin.sweep);  % Sweep length, ft
-XF = rocket.geo.fin.LE;            % Fin location, ft
+XS = b*tand(rocket.geo.fin.sweep);  % Sweep length, ft
+XF = rocket.geo.fin.LE/12;            % Fin location, ft
 
 % Fin/BOdy Interference Factor
-Kfb = 1 + d/(2*S + d);
+Kfb = 1 + d/(2*b + d);
 
 % Span length at chord of fins
-LF = sqrt(S^2 + (XS + (Ct/2) - (Cr/2))^2);
+LF = sqrt(b^2 + (XS + (Ct/2) - (Cr/2))^2);
 
 % Normal force on n fins
-CnaF = beta*(S/d)^2 /(1 + sqrt( 1 + (2*LF/(Cr + Ct))^2 ) );
+CnaF = beta*(b/d)^2 /(1 + sqrt( 1 + (2*LF/(Cr + Ct))^2 ) );
 
 % Normal force on body
 CnaFB = Kfb * CnaF;
@@ -72,12 +72,12 @@ xF = XF + (XS/3)*(Cr + 2*Ct)/(Cr + Ct) +...
 
 % Body length
 Lb = (XF - Ln) + Cr;       
-
+%Lb = rocket.geo.body.L/12; % ft
 % Normal Coeff. of Body
-CnaB = (4/pi) .* (Lb/d).* AoA;
+CnaB = (4/pi) .* (Lb/d).* AoA * pi/180;
 
 % Location of Normal Force of Body
-xB = Ln + (Lb/2);
+xB = Ln + (Lb/2); % ft
 
 %% Total Cp
 
@@ -87,8 +87,8 @@ CnaT = CnaN + CnaFB + CnaB;
 % Center of Press.
 xCP = (CnaN*xN + CnaFB*xF + CnaB*xB)./CnaT;
 
-rocket.aero.cp = xCP;
-rocket.aero.nc.SA = SA_nose;
+rocket.aero.cp = xCP*12; % in
+%rocket.aero.nc.SA = SA_nose;
 rocket.aero.cp_aoa = AoA;
 
 end
