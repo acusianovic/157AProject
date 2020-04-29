@@ -1,7 +1,5 @@
-function [rocket] = getCP(rocket,AoA)
-if ~isnumeric(AoA)
-    AoA = 4*pi/180;
-end
+function rocket = getCP(rocket)
+AoA = 0:0.25:30;
 
 % Need to include AoA
 d = rocket.geo.body.D/12;          % Rocket diameter, ft
@@ -76,7 +74,7 @@ xF = XF + (XS/3)*(Cr + 2*Ct)/(Cr + Ct) +...
 Lb = (XF - Ln) + Cr;       
 
 % Normal Coeff. of Body
-CnaB = (4/pi) * (Lb/d).* AoA;
+CnaB = (4/pi) .* (Lb/d).* AoA;
 
 % Location of Normal Force of Body
 xB = Ln + (Lb/2);
@@ -87,11 +85,11 @@ xB = Ln + (Lb/2);
 CnaT = CnaN + CnaFB + CnaB;
 
 % Center of Press.
-xCP = (CnaN*xN + CnaFB*xF + CnaB*xB)/CnaT;
+xCP = (CnaN*xN + CnaFB*xF + CnaB*xB)./CnaT;
 
 rocket.aero.cp = xCP;
 rocket.aero.nc.SA = SA_nose;
-
+rocket.aero.cp_aoa = AoA;
 
 end
 

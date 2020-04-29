@@ -1,4 +1,4 @@
-function [rocket] =getCG(rocket)
+function [rocket] = getCG(rocket)
 
 % Assume thin wall, so CG is not affected by thickness
 % 1-D approximation

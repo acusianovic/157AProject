@@ -23,11 +23,7 @@ while  g < numGoodRockets
     newRocket = getRandomRocket(newRocket); % initialize random rocket
     newRocket = getPropulsionDetails(newRocket); % initialize rocket propulsion
     newRocket = getWeightLength(newRocket); % estimate rocket weight and length
-    %% TODO: add aerodynamics, rn just assumes Cd = 0.7
-    %newRocket = aerodynamics(newRocket); % get aero coefficients vs mach number
-    newRocket.aero.Cd = 0.7;
-    %% TODO: get center of pressure from aero
-    %newRocket = getCP(newRocket); % get center of pressure versus mach number
+    newRocket = getCP(newRocket); % get center of pressure versus angle of attack
     %% TODO: get CGs and inertias to use for stability
     %newRocket = getCG(newRocket); % get CG versus propellant weight
     %newRocket = getInertias(newRocket); % get center of pressure versus mach number and propellant weight
