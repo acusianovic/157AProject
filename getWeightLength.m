@@ -4,9 +4,10 @@ function [rocket] = getWeightLength(rocket)
     W_dry(1) = Weight_guess;
         
     %% Nosecone Weight
-    L_nosecone = rocket.geo.nc.L*12; % inches
+    L_nosecone = rocket.geo.nc.L; % ft
     rho_nosecone = 100;        % Fiberglass (lb/ft^3), change later
-    W_nosecone = rho_nosecone*rocket.geo.nc.V; % ft3
+    W_nosecone = rho_nosecone*rocket.geo.nc.V; % lbm
+    L_nosecone = L_nosecone *12;    % convert to inch
 
     %% Recovery Weight and Length
     
