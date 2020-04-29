@@ -86,13 +86,13 @@ while vy(step) >= 0 && step <= MaxIterations %currently only calculating up to a
         m(step+1) = m(step);
     end
     
-    %Gravitational Force
+    %Gravity
     %update gravitational acceleration
     g = g0*((2.0856*10^7)/(2.0856*10^7+h(step)))^2;
     %calculate new force due to gravity
     Fg(step) = -m(step)*g;
 
-    %Drag Force
+    %Drag
     %get local air density
     rhoAir = rho/515.379; % [slugs/ft^3]
     %get speed of sound
@@ -103,69 +103,24 @@ while vy(step) >= 0 && step <= MaxIterations %currently only calculating up to a
     else
         SOS = 0.0007*h(step) + 924.99;
     end
-    %dynamic drag model
-    if h(step) <= 1000 && ChuteDeployed == 0 %pre-launch and early region
-        Af = (pi/4)*RocketDiam^2;
-        %Cd(step) = 0.1;
-        Cd(step) = interp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),v(step)/SOS);
-        %Mach(step) = v(step)/1116.28;
-        Sign = -1;
-    elseif vy(step) > 0 %before apogee
-        %[Cd(step),Mach(step)] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
-        Cd(step) = interp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),v(step)/SOS);
+    %choose drag coefficient
+    Cd(step) = interp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),v(step)/SOS);
+    %choose drag area
+    if vy(step) > 0 %before apogee
         Af = (pi/4)*RocketDiam^2; %[ft^2]
-        Sign = -1;
-    elseif vy(step) < 0 && h(step) > RecoveryAltitude && ChuteDeployed == 0 %after apogee, before chute deployment
-        %[Cd(step),Mach(step)] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
-        Cd(step) = interp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),v(step)/SOS);
+    elseif vy(step) < 0 && h(step) > RecoveryAltitude && ChuteDeployed == 0 %after apogee, before main chute deployment
         Af = (pi/4)*RocketDiam^2; %[ft^2]
-        Sign = 1;
-    else %thereafter: chute out, change sign depending on direction until balance
+        AOA = 0;
+    else %after apogee, after main chute deployment
         if ChuteDeployed == 0
-        ChuteDeployed = 1;
-        fprintf( 'Main parachute deployed at %f s and %f ft', t(step), h(step))
+            ChuteDeployed = 1;
+            fprintf( 'Main parachute deployed at %f s and %f ft', t(step), h(step))
         end
         Af = (pi/4)*24^2; %[ft^2]
-        %Cd(step) = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
         Cd(step) = interp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),v(step)/SOS);
-        AOA = 0; %manually adjust angle of attack !!!!!!!!
-        Sign = (-vy(step)/abs(vy(step)));
-    end
-    Fd(step) = Sign*0.5*rhoAir*v(step)^2*Af*Cd(step);
-    %{
-    %override unsteady densities
-    if h(step) >= 150000
-       Cd(step) = 0;
-       Fd(step) = 0;
-    end
-    %}
-    
-    %Simple drag model
-    %{
-    if v(step) == 0 && ChuteDeployed == 0 %pre-launch
-        Af = (pi/4)*RocketDiam^2;
-        Cd(step) = 0;
-        Sign = 1;
-    elseif vy(step) > 0  && ChuteDeployed == 0 %before apogee
-        Cd(step) = 0.5;
-        Af = (pi/4)*RocketDiam^2; %[ft^2]
-        Sign = -1;
-    elseif vy(step) < 0 && h(step) > RecoveryAltitude && ChuteDeployed == 0 %after apogee, before chute deployment
-        Cd(step) = 0.5;
-        Af = (pi/4)*RocketDiam^2; %[ft^2]
-        Sign = 1;
-    else
-        if ChuteDeployed == 0
-        ChuteDeployed = 1;
-        fprintf( 'Main parachute deployed at %f s and %f ft', t(step), h(step))
         AOA = 0;
-        end
-        Af = (pi/4)*30^2; %[ft^2]
-        Cd(step) = 1.75;
-        Sign = (-vy(step)/abs(vy(step)));
     end
-    Fd = Sign*0.5*rhoAir*v(step)^2*Af*Cd(step);
-    %}
+    Fd(step) = (-vy(step)/abs(vy(step)))*0.5*rhoAir*v(step)^2*Af*Cd(step);
 
     %%% Kinematics %%%
     
