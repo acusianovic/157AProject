@@ -10,6 +10,7 @@ load('Aerobee150ADragData.mat','Aerobee150ADragData');
 %%% Physical Parameters %%%
 g0 = 32.174; %sea level gravitational acceleration [ft/s^2]
 Pa = 14.7; %sea level atmsopheric pressure [psia]
+LRL = 160;
 
 %%% Define and Re-Name Rocket Geometry %%%
 RocketDiam = rocket.geo.body.D/12; %body diameter [ft]
@@ -36,6 +37,7 @@ mdot = rocket.prop.mdot/32.2; %[slugs/s]
 LaunchAngle = 4*pi/180; %[rad]
 AOA = LaunchAngle; %angle of attack[rad] %%%%UPDATE LATER!!!
 Pe = rocket.prop.P_e; %assume perfectly expanded at sea level!
+Ft = 0;
 
 %%% Define rocket masses %%%
 DryMass = rocket.data.weight.dry/32.2; %[slugs]
@@ -106,7 +108,7 @@ while vy(step) >= 0 && step <= MaxIterations %currently only calculating up to a
         Af = (pi/4)*RocketDiam^2;
         %Cd(step) = 0.1;
         Cd(step) = interp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),v(step)/SOS);
-        Mach(step) = v(step)/1116.28;
+        %Mach(step) = v(step)/1116.28;
         Sign = -1;
     elseif vy(step) > 0 %before apogee
         %[Cd(step),Mach(step)] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
