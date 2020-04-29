@@ -1,6 +1,7 @@
-function [newRocket] = getCP(newRocket,AoA)
+function [newRocket] = getCP(newRocket)
 
 % Need to include AoA
+AoA = 4*pi/180;
 d = newRocket.geo.body.D/12;          % Rocket diameter, ft
 
 %% Nose Cone
