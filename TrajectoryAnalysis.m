@@ -6,14 +6,18 @@ clear variables;close all;clc
 %%% Load Atmospheric Model %%%
 load('AtmosphericPressureModel.mat', 'PressureAltitude','AtmosphericPressure');
 load('AtmosphericDensityModel.mat', 'DensityAltitude','Density');
+
 %convert to english units
 PressureAltitude = 3.28084*PressureAltitude; %[ft]
-DensityAltitude1 = 3.28084*DensityAltitude; %[ft]
+DensityAltitudeSparce = 3.28084*DensityAltitude; %[ft]
 AtmosphericPressure = 0.000145038*AtmosphericPressure; %[psi]
 Density = 0.00194032*Density; %[slug/ft^3]
-%interpolate data\
-DensityAltitude = linspace( min(DensityAltitude1), max(DensityAltitude1), 10^5);
-Density = interp1(DensityAltitude1,Density,DensityAltitude,'pchip');
+%interpolate data
+DensityAltitude = linspace( min(DensityAltitudeSparce), max(DensityAltitudeSparce), 10^5);
+Density = interp1(DensityAltitudeSparce,Density,DensityAltitude,'pchip');
+
+%%% Load Aerobee Drag Data %%%
+load('Aerobee150ADragData.mat','Aerobee150ADragData');
 
 %%% Physical Parameters %%%
 g0 = 32.174; %sea level gravitational acceleration [ft/s^2]
@@ -62,15 +66,18 @@ NER = 4.6; %nozzle expansion ratio
 Pe = Pa; %assume perfectly expanded at sea level
 
 %%% Set altitude for recovery deployment %%%
-RecoveryAltitude = 0; %[ft]
+RecoveryAltitude = 90000; %[ft]
+ADrogue = 25; %[ft]
+AChute = 100; %[ft]
 
 %%% Loop Parameters %%%
-dt = 0.1; %time step [s]
+dt = 0.01; %time step [s]
 step = 1; %count loop iterations
 MaxIterations = 10^6; %force stop condition
 
 %counters
 ThrustCounter = 0; %for finding burnout parameters later
+DrogueDeployed = 0;
 ChuteDeployed = 0;
 ApogeeCounter = 0; %for finding apogee later
 
@@ -100,70 +107,85 @@ while h(step) >= 0 && step <= MaxIterations
     Fg(step) = -m(step)*g;
 
     %Drag Force
-    %get local air density
-
-    %Dynamic drag model
     rhoAir = interp1(DensityAltitude,Density,h(step)); %[slugs/ft^3]
+    %{
+    %Dynamic drag model
+    %[Cd(step),~] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,... 
+    %RocketDiam*12,v(step),Sb,Sf,Lp); call dynamic Cd
+    if h < 37000           
+        SOS = -0.004*h(step) + 1116.45;
+    elseif h <= 64000
+        SOS = 968.08;
+    else
+        SOS = 0.0007*h(step) + 924.99;
+    end
+    Cd(step) = interp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),v(step)/SOS);
     
-    if h(step) <= 1000 && ChuteDeployed == 0 %pre-launch and early region
-        Af = (pi/4)*RocketDiam^2;
-        Cd(step) = 0.5;
-        %Mach(step) = v(step)/1116.28;
-        Sign = -1;
-    elseif vy(step) > 0 %before apogee
-        [Cd(step),~] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+    %Aerobee Drag Model
+    if vy(step) > 0 %before apogee
         Af = (pi/4)*RocketDiam^2; %[ft^2]
         Sign = -1;
         ApogeeCounter = step;
     elseif vy(step) < 0 && h(step) > RecoveryAltitude && ChuteDeployed == 0 %after apogee, before chute deployment
-        [Cd(step),~] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
         Af = (pi/4)*RocketDiam^2; %[ft^2]
         Sign = 1;
         AOA = 0;
     else %thereafter: chute out, change sign depending on direction until balance
         if ChuteDeployed == 0
         ChuteDeployed = 1;
-        fprintf( 'Main parachute deployed at %f s and %f ft', t(step), h(step))
+        fprintf( '\n Main parachute deployed at %f s and %f ft', t(step), h(step))
         end
-        Af = (pi/4)*24^2; %[ft^2]
-        [Cd(step), ~] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        Af = (pi/4)*30^2; %[ft^2]
         AOA = 0;
         Sign = 1;%(-vy(step)/abs(vy(step)));
     end
     Fd(step) = Sign*0.5*rhoAir*v(step)^2*Af*Cd(step);
     %override negligible densities
-    if h(step) >= 200000
+    if h(step) >= 200000 && ChuteDeployed == 0
        Cd(step) = 0;
        Fd(step) = 0;
     end
-    
-    
-    %Simple drag model
-    %{
+    %}
+    %Speed of sound
+    if h < 37000           
+        SOS = -0.004*h(step) + 1116.45;
+    elseif h <= 64000
+        SOS = 968.08;
+    else
+        SOS = 0.0007*h(step) + 924.99;
+    end
+    %Simple drag model (Aerobee Data)
     if v(step) == 0 && ChuteDeployed == 0 %pre-launch
         Af = (pi/4)*RocketDiam^2;
         Cd(step) = 0;
-        Sign = 1;
+        Fd(step) = -1*0.5*rhoAir*v(step)^2*Af*Cd(step);
     elseif vy(step) > 0  && ChuteDeployed == 0 %before apogee
-        Cd(step) = 0.5;
+        %Cd(step) = 0.4;
         Af = (pi/4)*RocketDiam^2; %[ft^2]
-        Sign = -1;
-    elseif vy(step) < 0 && h(step) > RecoveryAltitude && ChuteDeployed == 0 %after apogee, before chute deployment
-        Cd(step) = 0.5;
-        Af = (pi/4)*RocketDiam^2; %[ft^2]
+        Cd(step) = interp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),v(step)/SOS);
+        Fd(step) = -1*0.5*rhoAir*v(step)^2*Af*Cd(step);
+    elseif vy(step) < 0 && h(step) > RecoveryAltitude  %deploy drogue at apogee
+        Cd(step) = 0.75;
+        Af = ADrogue; %[ft^2]
+        if DrogueDeployed == 0
+            DrogueDeployed = 1;
+            fprintf( '\nDrogue deployed at %0.0fs and %0.0fft', t(step), h(step))
+        end
         Sign = 1;
+        AOA = 0;
+        Fd(step) = -1*0.5*rhoAir*vy(step)^2*Af*Cd(step);
     else
         if ChuteDeployed == 0
-        ChuteDeployed = 1;
-        fprintf( 'Main parachute deployed at %f s and %f ft', t(step), h(step))
+            ChuteDeployed = 1;
+            fprintf( '\nMain parachute deployed at %0.0fs and %0.0fft', t(step), h(step))
         AOA = 0;
         end
-        Af = (pi/4)*30^2; %[ft^2]
-        Cd(step) = 1.75;
+        Af = AChute; %[ft^2]
+        Cd(step) = 1;
         Sign = (-vy(step)/abs(vy(step)));
+        Fd(step) = Sign*0.5*rhoAir*vy(step)^2*Af*Cd(step);
     end
-    Fd = Sign*0.5*rhoAir*v(step)^2*Af*Cd(step);
-    %}
+    
 
     %%% Kinematics %%%
     
@@ -200,8 +222,17 @@ while h(step) >= 0 && step <= MaxIterations
 end
 
 %notable outputs
-fprintf('\nBurnout time = %fs', t(ThrustCounter))
-fprintf('\nOff the rail speed: %fft/s', OTRS)
+fprintf('\nBurnout time = %0.0fs', t(ThrustCounter))
+fprintf('\nOff the rail speed: %0.0fft/s', OTRS)
+fprintf('\nDescent velocity: %0.0fft/s', v(end-1))
+fprintf('\nDrift distance: %0.0fmi', x(step)/5280)
+
+%% Altitude vs. Time
+figure
+plot(t,h,'LineWidth',1.5);
+ap = gca;
+ap.Box = 'on'; 
+ap.LineWidth = 1.5;
 
 %% altitude and velocity comparisons
 figure
