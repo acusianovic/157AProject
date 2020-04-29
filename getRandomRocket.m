@@ -90,7 +90,7 @@ rocket.geo.fin.cl_0 = 0; % Cl for 0 AOA for NACA 0010 airfoil
 % randomize burn time instead
 rocket.prop.PC = 250 + rand()*(600-250); % chamber pressure, psi
 rocket.prop.OD = rocket.geo.body.D*(0.7 +rand()*(0.9 - 0.7)); % rocket chamber OD, in
-rocket.prop.Itot = 1E3*(120 + rand()*(250 - 120)); % total impulse, lbf-s
+rocket.prop.Itot = 1E3*(90 + rand()*(200 - 90)); % total impulse, lbf-s
 rocket.prop.F = 900 + rand()*(4000-900); % thrust, lbf
 
 

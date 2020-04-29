@@ -182,9 +182,10 @@ while vy(step) >= 0 && step <= MaxIterations %currently only calculating up to a
     %position
     x(step+1) = x(step)+vx(step)*dt;
     h(step+1) = h(step)+vy(step)*dt;
-    if h(step+1) <= 0 && step < 100 %we haven't lifted off yet
+    if h(step+1) <= 0 && step < 100 || v(step+1) <= 0 %we haven't lifted off yet
         x(step+1) = 0;
         h(step+1) = 0;
+        vy(step+1) = 0;
     end
     LRL = 160;
     %%% find OTRS %%%

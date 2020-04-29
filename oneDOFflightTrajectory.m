@@ -6,6 +6,7 @@ simTime = 1000;
 dt = 0.01;
 N = simTime/dt;
 t = 0:dt:simTime-dt;
+load('Aerobee150ADragData.mat','Aerobee150ADragData');
 
 launch_tower_height = 160;
 m = rocket.data.weight.wet;  % total weight
@@ -24,10 +25,11 @@ x_arr = zeros(N,1);
 v_arr = zeros(N,1);
 T_arr = zeros(N,1);
 D_arr = zeros(N,1);
+M_arr = zeros(N,1);
 rho_arr = zeros(N,1);
 
 % Initial conditions
-v=0;y=0;x=0;dv=0;T=0;D=0;
+v=0;y=0;x=0;dv=0;T=0;D=0;M=0;
 
 % Begin simulation
 for i = 1:N
@@ -40,12 +42,18 @@ for i = 1:N
     v_arr(i)=v;
     T_arr(i)=T;
     D_arr(i)=D;
+    M_arr(i)=M;
     
     %[rho,P_a,~] = getAtm(y,0); % slug/ft3, psi
     [~, a, P_a, rho] = atmos(y/3.28);
     rho = rho/515.379; % slug/ft3
     P_a = P_a/101325*14.7; % psi
-    
+    M = abs(v/(a*3.28));
+    if M < 7
+        Cd = interp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),M);
+    else
+        Cd = min(Aerobee150ADragData(2,:));
+    end
     % Physics
     D = 0.5*rho*v^2*S*Cd; % drag, lbf
     if v >= 0 && t(i) <= t_b
@@ -94,6 +102,9 @@ if 0
     %%
     figure
     plot(t,v_arr)
+    %%
+    figure
+    plot(t,M_arr)
 end
 %% Performance
 [apogee, ind] = max(y_arr);

@@ -44,7 +44,7 @@ while  g < numGoodRockets
        g = g+1;
        fprintf('GOOD')
     else
-        resultRockets(b+1).Bad = newRocket;
+        %resultRockets(b+1).Bad = newRocket;
         b = b+1;
     end
     n = n + 1;
@@ -321,7 +321,7 @@ bar(1:g,Thrust)
 toc
 %%
 %% max value function
-valf = (apogee./min(apogee)).*(OTRS./min(OTRS)).*(max(m_w)./W);
+valf = (apogee./min(apogee)).*(OTRS./min(OTRS)).*(max(m_w)./m_w);
 figure
 bar(1:g,valf)
 
