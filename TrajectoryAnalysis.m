@@ -147,9 +147,9 @@ while h(step) >= 0 && step <= MaxIterations
     end
     %}
     %Speed of sound
-    if h < 37000           
+    if h(step) < 37000           
         SOS = -0.004*h(step) + 1116.45;
-    elseif h <= 64000
+    elseif h(step) <= 64000
         SOS = 968.08;
     else
         SOS = 0.0007*h(step) + 924.99;

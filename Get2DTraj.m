@@ -5,6 +5,8 @@ function newrocket = Get2DTraj(newrocket)
 %   This is changed by changing the condition in the while loop to h(step)
 %   >= 0 rather than vy(step) >= 0.  Outputs: apogee, OTRS
 
+load('Aerobee150ADragData.mat','Aerobee150ADragData');
+
 %%% Physical Parameters %%%
 g0 = 32.174; %sea level gravitational acceleration [ft/s^2]
 Pa = 14.7; %sea level atmsopheric pressure [psia]
@@ -91,18 +93,29 @@ while vy(step) >= 0 && step <= MaxIterations %currently only calculating up to a
     %Drag Force
     %get local air density
     rhoAir = rho/515.379; % [slugs/ft^3]
+    %get speed of sound
+    if h(step) < 37000           
+        SOS = -0.004*h(step) + 1116.45;
+    elseif h(step) <= 64000
+        SOS = 968.08;
+    else
+        SOS = 0.0007*h(step) + 924.99;
+    end
     %dynamic drag model
     if h(step) <= 1000 && ChuteDeployed == 0 %pre-launch and early region
         Af = (pi/4)*RocketDiam^2;
-        Cd(step) = 0.1;
+        %Cd(step) = 0.1;
+        Cd(step) = interp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),v(step)/SOS);
         Mach(step) = v(step)/1116.28;
         Sign = -1;
     elseif vy(step) > 0 %before apogee
-        [Cd(step),Mach(step)] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        %[Cd(step),Mach(step)] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        Cd(step) = interp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),v(step)/SOS);
         Af = (pi/4)*RocketDiam^2; %[ft^2]
         Sign = -1;
     elseif vy(step) < 0 && h(step) > RecoveryAltitude && ChuteDeployed == 0 %after apogee, before chute deployment
-        [Cd(step),Mach(step)] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        %[Cd(step),Mach(step)] = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        Cd(step) = interp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),v(step)/SOS);
         Af = (pi/4)*RocketDiam^2; %[ft^2]
         Sign = 1;
     else %thereafter: chute out, change sign depending on direction until balance
@@ -111,7 +124,8 @@ while vy(step) >= 0 && step <= MaxIterations %currently only calculating up to a
         fprintf( 'Main parachute deployed at %f s and %f ft', t(step), h(step))
         end
         Af = (pi/4)*24^2; %[ft^2]
-        Cd(step) = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        %Cd(step) = Drag(h(step),L,Ct,Cr,xTc,tc,nf,Sp,Lap,Ap,db,L0,Ln,RocketDiam*12,v(step),Sb,Sf,Lp);
+        Cd(step) = interp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),v(step)/SOS);
         AOA = 0; %manually adjust angle of attack !!!!!!!!
         Sign = (-vy(step)/abs(vy(step)));
     end
