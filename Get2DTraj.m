@@ -10,6 +10,7 @@ load('Aerobee150ADragData.mat','Aerobee150ADragData');
 %%% Physical Parameters %%%
 g0 = 32.174; %sea level gravitational acceleration [ft/s^2]
 Pa = 14.7; %sea level atmsopheric pressure [psia]
+LRL = 160;
 
 %%% Define and Re-Name Rocket Geometry %%%
 RocketDiam = rocket.geo.body.D/12; %body diameter [ft]
