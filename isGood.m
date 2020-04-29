@@ -28,7 +28,7 @@ end
 
 
 %% geometry good
-if rocket.geo.LD <= 25
+if rocket.geo.LD <= 20
     arGood = true;
 else
     arGood = false;

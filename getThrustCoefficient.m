@@ -7,7 +7,7 @@ function cf = getThrustCoefficient(rocket, P_a)
     
     c1 = gam+1;c2 = gam - 1;
     c3 = c1/c2;
-    cf = sqrt(2*gam^2/c2*(2/c1)^c3*(1-(P_e/PC)^(c2/gam)))+...
-        (P_e-P_a)*exp/PC;
+    cf = (sqrt(2*gam^2/c2*(2/c1)^c3*(1-(P_e/PC)^(c2/gam)))+...
+        (P_e-P_a)*exp/PC)*rocket.prop.ct_eff;
     
 end

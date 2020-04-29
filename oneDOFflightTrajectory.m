@@ -2,7 +2,7 @@ function [rocket] = oneDOFflightTrajectory(rocket)
 % Simulate rocket in 1D to get apogee, OTRS
 
 % simulation parameters
-simTime = 1000;
+simTime = 500;
 dt = 0.01;
 N = simTime/dt;
 t = 0:dt:simTime-dt;
@@ -50,7 +50,7 @@ for i = 1:N
     P_a = P_a/101325*14.7; % psi
     M = abs(v/(a*3.28));
     if M < 7
-        Cd = interp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),M);
+        Cd = lininterp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),M);
     else
         Cd = min(Aerobee150ADragData(2,:));
     end

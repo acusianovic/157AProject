@@ -26,15 +26,17 @@ end
 % hold on
 % yyaxis right
 % plot(of, Isp)
+rocket.prop.cstar_eff = 0.9; % combustion efficiency
+rocket.prop.ct_eff = 0.95; % nozzle efficiency
 
 [Isp_max, maxInd] = max(Isp);
-rocket.prop.Isp = Isp_max; % specific impulse at max thrust
 rocket.prop.OF = of(maxInd); % mixture ratio
-rocket.prop.cstar = cstar(maxInd); % characteristic velocity, m/s
-rocket.prop.ct = ct(maxInd); % thrust coefficient, dim.
+rocket.prop.cstar = cstar(maxInd)*rocket.prop.cstar_eff; % characteristic velocity, m/s
+rocket.prop.ct = ct(maxInd)*rocket.prop.ct_eff; % thrust coefficient, dim.
 rocket.prop.T = combustion.T(PC, rocket.prop.OF); % adiabatic flame temperature, K
 rocket.prop.gam = combustion.gam(PC, rocket.prop.OF); % specific heat ratio
 rocket.prop.mw = combustion.mw(PC, rocket.prop.OF); % molecular weight
+rocket.prop.Isp = rocket.prop.cstar*rocket.prop.ct/9.81;
 
 rocket.prop.t_b = rocket.prop.Itot/rocket.prop.F;
 rocket.prop.m_p = rocket.prop.Itot/rocket.prop.Isp;
