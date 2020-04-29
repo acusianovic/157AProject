@@ -69,7 +69,7 @@ function [rocket] = getWeightLength(rocket)
     v_max = rocket.data.requirements.v_max*0.593;        %FIX UNITS         %kts   %Equivalent Vmax at SL
     %W_wing = 96.948 * ((Weight * N/10^5)^0.65*(AR/cos(sweep_angle))^0.57*(S/100)^0.61*((1 + taper_ratio)/(2*thickness_ratio_wing))^0.36*(1+v_max/500)^0.5)^0.993;
     W_fins = 14*rocket.geo.fin.n; % lbm, from aerobee
-    
+    rocket.geo.fin.LE = L_body - rocket.geo.fin.c; % place fin at bottom of the rocket
     
     %% TOTAL STRUCTURAL WEIGHT
     %TODO: add a better estimate of structural support, carbon fibre,

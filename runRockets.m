@@ -126,6 +126,7 @@ dummy = resultRockets;
 for n = 1:g
     resultRockets(n).Good = dummy(wI(n)).Good;
 end
+
 apogee = apogee(wI);
 OTRS = OTRS(wI);
 L = L(wI);

@@ -1,16 +1,16 @@
-function [newRocket] = getCP(newRocket)
+function [rocket] = getCP(rocket,AoA)
 
 % Need to include AoA
-AoA = 4*pi/180;
-d = newRocket.geo.body.D/12;          % Rocket diameter, ft
+d = rocket.geo.body.D/12;          % Rocket diameter, ft
 
 %% Nose Cone
-Ln = newRocket.geo.nc.L;           % Nose Cone length, ft
-Shape = newRocket.geo.nc.Shape;    % Nose Cone Shape
-V = newRocket.geo.nc.V;            % Nose Cone Volume, ft^3
+Ln = rocket.geo.nc.L;           % Nose Cone length, ft
+Shape = rocket.geo.nc.Shape;    % Nose Cone Shape
+V = rocket.geo.nc.V;            % Nose Cone Volume, ft^3
 
 if Shape == 1           % Von Karman
-    x = 0:0.1:Ln;
+    dx = 0.1;
+    x = 0:dx:Ln;
     theta = acos( 1 - (2*x)/Ln);
     R = d/2;
     yN = (R/sqrt(pi)) * sqrt(theta - sin(2.*theta)/2);
@@ -36,18 +36,18 @@ elseif Shape == 3           % Elliptical
 end
 
 %% Fin 
-nf = newRocket.geo.fin.n;          % Number of fins
+nf = rocket.geo.fin.n;          % Number of fins
 if nf == 3
     beta = 13.85;
 elseif nf == 4
     beta = 16;
 end
 
-S = newRocket.geo.fin.b;     % Semipan of fin, ft
-Cr = newRocket.geo.fin.c;      % Root Chord, ft
-Ct = new.rocket.geo.fin.TR*Cr;  % Tip Chord, ft
+S = rocket.geo.fin.b;     % Semipan of fin, ft
+Cr = rocket.geo.fin.c;      % Root Chord, ft
+Ct = rocket.geo.fin.TR*Cr;  % Tip Chord, ft
 XS = S*tand(rocket.geo.fin.sweep);  % Sweep length, ft
-XF = newRocket.geo.fin.LE;            % Fin location, ft
+XF = rocket.geo.fin.LE;            % Fin location, ft
 
 % Fin/BOdy Interference Factor
 Kfb = 1 + d/(2*S + d);
@@ -85,8 +85,8 @@ CnaT = CnaN + CnaFB + CnaB;
 % Center of Press.
 xCP = (CnaN*xN + CnaFB*xF + CnaB*xB)/CnaT;
 
-newRocket.aero.cp = xCP;
-newRocket.aero.nc.SA = SA_nose;
+rocket.aero.cp = xCP;
+rocket.aero.nc.SA = SA_nose;
 
 
 end
