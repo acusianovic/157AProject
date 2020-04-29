@@ -130,12 +130,13 @@ while vy(step) >= 0 && step <= MaxIterations %currently only calculating up to a
         Sign = (-vy(step)/abs(vy(step)));
     end
     Fd(step) = Sign*0.5*rhoAir*v(step)^2*Af*Cd(step);
+    %{
     %override unsteady densities
     if h(step) >= 150000
        Cd(step) = 0;
        Fd(step) = 0;
     end
-    
+    %}
     
     %Simple drag model
     %{
