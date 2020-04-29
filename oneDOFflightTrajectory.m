@@ -84,17 +84,17 @@ for i = 1:N
         break;
     end
 end
-%%
-% figure
-% plot(t,y_arr./5280)
-% %%
-% figure
-% plot(t,T_arr,t,D_arr)
-% legend('Thrust','Drag')
-% %%
-% figure
-% plot(t,v_arr)
-
+if 0
+    figure
+    plot(t,y_arr./5280)
+    %%
+    figure
+    plot(t,T_arr,t,D_arr)
+    legend('Thrust','Drag')
+    %%
+    figure
+    plot(t,v_arr)
+end
 %% Performance
 [apogee, ind] = max(y_arr);
 

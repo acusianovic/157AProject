@@ -7,7 +7,7 @@ g = 0; % good rockets
 b = 0; % bad rockets
 n = 0;
 vg = 0;
-numGoodRockets = 100;
+numGoodRockets = 10;
 resultRockets = struct(['Good','Bad'],{});
 % while we have less than (n) good rockets:
 fprintf('Finding good rockets... \n')
@@ -44,6 +44,7 @@ while  g < numGoodRockets
        g = g+1;
        fprintf('GOOD')
     else
+        resultRockets(b+1).Bad = newRocket;
         b = b+1;
     end
     n = n + 1;
@@ -54,9 +55,9 @@ beep
 fprintf('\n\n%d good rockets found \n',g)
 fprintf('%d bad rockets discarded \n',b)
 %%
-boolArray = n - boolArray;
+badfails = n - boolArray;
 figure
-bar(boolArray)
+bar(badfails)
 set(gca,'xticklabel',{'apogeeBad', 'otrsBad', 'arBad'})
 
 %% initialize data variables
@@ -149,6 +150,7 @@ fin_sweep = fin_sweep(wI);
 fin_TR = fin_TR(wI);
 
 %% Visualize spread and find the best rocket
+if 0 % set to 1 to plot after running
 %%
 figure
 bar(1:g,m_w)
@@ -160,13 +162,23 @@ ylabel('Propellant Mass, lb')
 
 %%
 figure
+bar(1:g,m_p./m_d)
+ylabel('Mass Fraction')
+
+%%
+figure
+bar(1:g,Thrust)
+ylabel('Thrust')
+
+%%
+figure
 bar(1:g,OTRS)
 ylabel('Off the rail speed, ft/s')
 
 %%
 figure
 bar(1:g,apogee./5280)
-ylabel('Apogee, ft')
+ylabel('Apogee, miles')
 
 %%
 figure
@@ -184,6 +196,10 @@ figure
 bar(1:g,L./12)
 ylabel('Rocket Length, ft')
 
+%%
+figure
+bar(1:g,LD)
+ylabel('Aspect Ratio')
 %%
 figure
 bar(1:g,D)
@@ -305,7 +321,7 @@ bar(1:g,Thrust)
 toc
 %%
 %% max value function
-valf = (R./min(R)).*(ROC./min(ROC)).*(max(W)./W);
+valf = (apogee./min(apogee)).*(OTRS./min(OTRS)).*(max(m_w)./W);
 figure
 bar(1:g,valf)
 
@@ -329,4 +345,5 @@ yline(62,'LineWidth',3)
 %   set(gca,'XTick',[], 'YTick', [], 'ZTick', [])
 %   title(k)
 % end
+end
 

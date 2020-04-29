@@ -48,7 +48,7 @@ rocket.prop.FOS = 1.5; % chamber factor of safety
 
 rocket.prop.Vc = rocket.prop.Lstar*rocket.prop.At; % in3, chamber volume
 sigma_y_steel = 42100; % yield strength of 303 steel, psi
-rocket.prop.tc = PC*rocket.prop.OD/2/(sigma_y_steel/rocket.prop.FOS); % in
+rocket.prop.tc = PC*rocket.prop.OD/2/(2*sigma_y_steel/rocket.prop.FOS); % in
 rocket.prop.ID = rocket.prop.OD - 2*rocket.prop.tc;
 rocket.prop.Ac = pi/4*rocket.prop.ID^2;
 
@@ -87,8 +87,9 @@ rho_ox = 72.2; % oxygen density, lbm/ft3
 rho_fuel = 27.3753; % methane density, lbm/ft3
 rocket.prop.V_ox = rocket.prop.m_ox/rho_ox; % ox volume, ft3
 rocket.prop.V_fuel = rocket.prop.m_fuel/rho_fuel; % fuel volume, ft3
-rocket.prop.t_ox = rocket.prop.P_ox*rocket.geo.body.D/2/(sigma_y_al/rocket.prop.FOS); % ox tank thickness, in
-rocket.prop.t_fuel = rocket.prop.P_fuel*rocket.geo.body.D/2/(sigma_y_al/rocket.prop.FOS); % ox tank thickness, in
+
+rocket.prop.t_ox = rocket.prop.P_ox*rocket.geo.body.D/2/(2*sigma_y_al/rocket.prop.FOS); % ox tank thickness, in
+rocket.prop.t_fuel = rocket.prop.P_fuel*rocket.geo.body.D/2/(2*sigma_y_al/rocket.prop.FOS); % ox tank thickness, in
 
 Vcap = 4*pi/3*(rocket.geo.body.D/2/12)^3; % tank cap volume (for 2 caps)
 rocket.prop.L_ox = rocket.geo.body.D/12 + (rocket.prop.V_ox-Vcap)/(pi/4*(rocket.geo.body.D/12)^2); % ox tank length, ft

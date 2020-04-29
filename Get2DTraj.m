@@ -1,4 +1,4 @@
-function newrocket = Get2DTraj(newrocket)
+function rocket = Get2DTraj(rocket)
 %2D flight trajectory simulator
 %   This function calculates the altitude and horizontal displacement of
 %   the rocket over time.  It is currently set to terminate at the apogee.
@@ -169,7 +169,7 @@ while vy(step) >= 0 && step <= MaxIterations %currently only calculating up to a
         x(step+1) = 0;
         h(step+1) = 0;
     end
-    
+    LRL = 160;
     %%% find OTRS %%%
     if sqrt(x(step)^2+h(step)^2) <= LRL
         OTRS = v(step);
