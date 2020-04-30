@@ -15,7 +15,7 @@ rocket.geo.nc.tn = 0.12;        % Thickness, in (change later)
 % Calculate Volume
 dx = 0.01;
 x = 0:dx:rocket.geo.nc.L;
-R = rocket.geo.body.D/2;
+R = rocket.geo.body.D/(12*2);
 
 if rocket.geo.nc.Shape == 1         % Von Karman
     theta = acos( 1 - (2*x)/rocket.geo.nc.L);
