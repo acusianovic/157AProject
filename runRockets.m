@@ -300,11 +300,13 @@ F = scatteredInterpolant(x,y,z);
 [Xq,Yq] = meshgrid(qx, qy);
 F.Method = 'natural';
 Z = F(Xq,Yq);
+hold on
 meshc(Xq,Yq,Z)
+stem3(D(1),PC(1),m_w(1),'r','LineWidth',4)
 xlabel('Diameter, in')
 ylabel('Chamber Pressure, psi')
 zlabel('Wet Mass, lbm')
-zlim([500 800])
+zlim([600 1000])
 shading interp
 set(gca, 'FontSize', 17, 'FontWeight', 'bold')
 

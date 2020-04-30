@@ -47,9 +47,10 @@ rocket.prop.Dt = sqrt(4*rocket.prop.At/pi); % throat diameter, in
 %% Chamber sizing
 rocket.prop.Lstar = 50; % characteristic chamber length, in, dependent on propellant
 rocket.prop.FOS = 1.5; % chamber factor of safety
+thermal_knockdown = 0.6; % accounting for reduction in yield strength at high temp
 
 rocket.prop.Vc = rocket.prop.Lstar*rocket.prop.At; % in3, chamber volume
-sigma_y_steel = 42100; % yield strength of 303 steel, psi
+sigma_y_steel = 42100*thermal_knockdown; % yield strength of 303 steel, psi
 rocket.prop.Ac = 3*rocket.prop.At; % in2
 rocket.prop.ID = sqrt(4/pi*rocket.prop.Ac); % ID, % in
 rocket.prop.tc = PC*rocket.prop.ID/2/(2*sigma_y_steel/rocket.prop.FOS); % in

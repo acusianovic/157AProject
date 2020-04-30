@@ -113,7 +113,9 @@ if 0
     
     %%
     figure
-    plot(t,a_arr/g)
+    plot(t,a_arr/g,'LineWidth',2)
+    grid on
+    xlabel('Time(s)');ylabel("Acceleration, g's")
 end
 %% Performance
 [apogee, ind] = max(y_arr);
