@@ -15,7 +15,7 @@ rocket.geo.nc.tn = 0.12;        % Thickness, in (change later)
 % Calculate Volume
 dx = 0.01;
 x = 0:dx:rocket.geo.nc.L;
-R = rocket.geo.body.D/2;
+R = rocket.geo.body.D/(12*2);
 
 if rocket.geo.nc.Shape == 1         % Von Karman
     theta = acos( 1 - (2*x)/rocket.geo.nc.L);
@@ -69,10 +69,10 @@ rocket.geo.nc.V = VOuter - VInner; % Volume in ft^3;
 %% fin, NACA 0010 Airfoil
 rocket.geo.fin.n = 4; % number of fins (all values below for 1 fin)
 rocket.geo.fin.TR = 0.5; % taper ratio
-rocket.geo.fin.S = 5 + rand()*(30 - 5); %ft^2, fin area
-rocket.geo.fin.AR = 2 + rand()*(4 - 2); %fin aspect ratio
+rocket.geo.fin.S = 0.2 + rand()*(5 - 0.2); % ft^2, fin area
+rocket.geo.fin.AR = 0.1 + rand()*(1 - 0.1); %fin aspect ratio
 rocket.geo.fin.b = (rocket.geo.fin.S * rocket.geo.fin.AR )^0.5; %ft, fin span length
-rocket.geo.fin.c = 2*rocket.geo.fin.S/rocket.geo.fin.b/(1+rocket.geo.fin.TR); %ft, fin chord length
+rocket.geo.fin.c = 2*rocket.geo.fin.S/rocket.geo.fin.b/(1+rocket.geo.fin.TR); % ft, fin chord length
 rocket.geo.fin.ThR = 0.1; % thickness ratio
 rocket.geo.fin.sweep = 20 + rand()*(45-20); %degrees, sweep angle
 rocket.geo.fin.S_wet = rocket.geo.fin.S*(1.977 + 0.52*rocket.geo.fin.ThR); %ft^2, wetted area formula from http://www.ipublishing.co.in/jarvol1no12010/EIJAER2011.pdf
@@ -88,8 +88,9 @@ rocket.geo.fin.cl_0 = 0; % Cl for 0 AOA for NACA 0010 airfoil
 % rocket.prop.m_p = 600 + rand()*(1200-600); % propellant weight, lbm
 % randomize burn time instead
 rocket.prop.PC = 250 + rand()*(600-250); % chamber pressure, psi
-rocket.prop.OD = rocket.geo.body.D*(0.7 +rand()*(0.9 - 0.7)); % rocket chamber OD, in
-rocket.prop.Itot = 1E3*(90 + rand()*(200 - 90)); % total impulse, lbf-s
+% rocket.prop.OD = rocket.geo.body.D*(0.7 +rand()*(0.9 - 0.7)); % determine
+% from throat area instead
+rocket.prop.Itot = 1E3*(80 + rand()*(200 - 80)); % total impulse, lbf-s
 rocket.prop.F = 900 + rand()*(4000-900); % thrust, lbf
 
 

@@ -3,37 +3,61 @@ function [rocket] = getWeightLength(rocket)
     W_dry = zeros(1,20);
     W_dry(1) = Weight_guess;
         
-    %% Nosecone Weight
+    %% Nosecone
     L_nosecone = rocket.geo.nc.L*12; % inches
     rho_nosecone = 100;        % Fiberglass (lb/ft^3), change later
     W_nosecone = rho_nosecone*rocket.geo.nc.V; % ft3
+    
+    %% Payload
+    W_payload = 10;    % lbs
+    L_payload = 12;    % inches, from requirements
+    
 
-    %% Recovery Weight and Length
+    %% Recovery
+    L_recovery = 7; % estimate, recovery bay length, inches
+    W_recovery = 2; % estimate
     
+    %% Propulsion System Weight 
+    %% Plumbing Bay 1
+    W_pbay1 = 5; % lbm
+    L_pbay1 = 6; % inches
     
-    %% Propulsion System Weight
-    %% Propellant Tank Weights
+    %% Propellant Tanks
     rho_al = 168.555; % aluminum 6061-T6 density, lbm/ft3
-    % Oxygen Tank
-    D = rocket.geo.body.D;
-    t = rocket.prop.t_ox;
-    L = rocket.prop.L_ox;
-    L_oxtank = 12*L+D; % tank length, inches
-    V1 = pi/4*(D^2-(D-2*t)^2)*L; % cylindrical section metal volume, in3
+    D = rocket.geo.body.D; % in
+    
+    %% Pressurant Tank
+    t = rocket.prop.t_press; % in
+    L_cyl = rocket.prop.L_press - D; % cyldinrical section, inches
+    L_presstank = rocket.prop.L_press; % tank length, inches
+    V1 = pi/4*(D^2-(D-2*t)^2)*L_cyl; % cylindrical section metal volume, in3
     V2 = 4*pi/3*((D/2)^3-((D-2*t)/2)^3); % spherical section metal volume, in3
+    W_presstank = (V1+V2)*rho_al/12^3; % lbm
+    W_press = rocket.prop.m_press;
+    
+    %% Oxygen Tank
+    t = rocket.prop.t_ox; % in
+    L_cyl = rocket.prop.L_ox - D; % in
+    V1 = pi/4*(D^2-(D-2*t)^2)*L_cyl; % cylindrical section metal volume, in3
+    V2 = 4*pi/3*((D/2)^3-((D-2*t)/2)^3); % spherical section metal volume, in3 
     W_oxtank = (V1+V2)*rho_al/12^3; % lbm
-    % Fuel tank
-    t = rocket.prop.t_fuel;
-    L = rocket.prop.L_fuel;
-    L_fueltank = 12*L+D; % tank length, inches
-    V1 = pi/4*(D^2-(D-2*t)^2)*L; % cylindrical section metal volume
-    V2 = 4*pi/3*((D/2)^3-((D-2*t)/2)^3); % spherical section metal volume
-    W_fueltank = (V1+V2)*rho_al/12^3; % lbm
-    %% Propellant Weights
     W_ox = rocket.prop.m_ox;
+    L_oxtank = rocket.prop.L_ox; % tank length, inches
+    
+    %% Fuel tank
+    t = rocket.prop.t_fuel;% in
+    L_cyl = rocket.prop.L_fuel - D; % cyldinrical section, inches
+    L_fueltank = rocket.prop.L_fuel; % tank length, inches
+    V1 = pi/4*(D^2-(D-2*t)^2)*L_cyl; % cylindrical section metal volume, in3
+    V2 = 4*pi/3*((D/2)^3-((D-2*t)/2)^3); % spherical section metal volume, in3
+    W_fueltank = (V1+V2)*rho_al/12^3; % lbm
     W_fuel = rocket.prop.m_fuel;
     
-    %% Engine Weight/Length
+    %% Plumbing Bay 2
+    W_pbay2 = 5; % lbm
+    L_pbay2 = 6; % inches
+    
+    %% Engine
     rho_steel = 490.752; % steel density
     t = rocket.prop.tc;
     OD = rocket.prop.OD;
@@ -41,75 +65,63 @@ function [rocket] = getWeightLength(rocket)
     L_engine = rocket.prop.Lc + rocket.prop.Lfrustum + rocket.prop.Ln; % in
     % approximate total weight assuming total length is cylinder
     W_engine = A*L_engine*rho_steel/12^3; % lbm
-    
-    %% Plumbing Weights
-    W_valves = 10;
-    W_lines = 5;
-    
-    %% TOTAL PROPULSION SYSTEM DRY WEIGHT 
-    W_propulsion = W_oxtank+W_fueltank+W_engine+W_valves+W_lines;
-    
-    %% Payload Weight/Length
-    W_payload = 10;    % lbs
-    L_payload = 12;    % inches, from requirements
-    
-    %% Fuselage Weight
-    L_body = L_payload+L_oxtank+L_fueltank+L_engine;
+
+    %% Body
+    L_body = L_payload+L_recovery+L_presstank+L_pbay1+L_oxtank+L_fueltank+L_pbay2+L_engine;
     V_body = (pi/4) * ((D+rocket.geo.nc.tn)^2 - D^2);
     %W_body = V_body * rho_al; % change density later
-    W_body = 80;
-    %% Fin Weight
-    S = rocket.geo.wing.S;                  %wing area, ft^2   % 
-    AR = rocket.geo.wing.AR;                %aspect ratio
+    W_body = 70;
     
-    N = 5;%rocket.data.N;                           % Ultimate Load Factor (1.5 times limit load factor)(GIVEN)
-    sweep_angle = rocket.geo.wing.sweep ;        % Deg %Wing 1/4 chord sweep angle
-    taper_ratio = rocket.geo.wing.TR;            %Taper Ratio
-    thickness_ratio_wing = rocket.geo.wing.ThR;          %Maximum Thickness Ratio (GIVEN)
-    v_max = rocket.data.requirements.v_max*0.593;        %FIX UNITS         %kts   %Equivalent Vmax at SL
-    %W_wing = 96.948 * ((Weight * N/10^5)^0.65*(AR/cos(sweep_angle))^0.57*(S/100)^0.61*((1 + taper_ratio)/(2*thickness_ratio_wing))^0.36*(1+v_max/500)^0.5)^0.993;
-    W_fins = 14*rocket.geo.fin.n; % lbm, from aerobee
-    rocket.geo.fin.LE = L_body - rocket.geo.fin.c; % place fin at bottom of the rocket
-    
-    %% TOTAL STRUCTURAL WEIGHT
-    %TODO: add a better estimate of structural support, carbon fibre,
-    %stringers etc. mostly dependent on total length so this probably needs
-    %to be moved to the end
+    %% Fins
+    S = rocket.geo.fin.S;                  %fin  area, ft^2   %
+    rho_CF = 111.24;                       % density of carbon fiber, lb/ft3
+    W_fin = S*rocket.geo.fin.ThR*rocket.geo.fin.c*0.5*rho_CF;  
+    W_fins = W_fin*rocket.geo.fin.n; % lbm
+    rocket.geo.fin.LE = L_body - rocket.geo.fin.c*12; % place fin at bottom of the rocket
+
+    %% TOTAL WEIGHTS
+    W_propulsion = W_presstank+W_pbay1+W_oxtank+W_fueltank+W_pbay2+W_engine;
     W_struct = W_fins + W_body + W_nosecone;
-
-    %% TOTAL WEIGHT
-    W_dry = W_struct + W_propulsion + W_payload;
-    W_wet = W_dry + W_ox + W_fuel;
-
-    % Check getCG function
-%     % TODO: enumerate weights for CG calc
-%     Weight = zeros(13,1);
-%     Weight(1) = W_nosecone;
-%     Weight(2) = W_payload;
-%     Weight(3) = W_oxtank;
-%     Weight(5) = W_dry;
+    W_dry = W_struct + W_propulsion + W_payload + W_recovery;
+    W_wet = W_dry + W_ox + W_fuel + W_press;
 
     % For CG Calculation (Weight)
     rocket.data.weight.body = W_body;
     rocket.data.weight.nosecone = W_nosecone;
-    rocket.data.weight.fins = W_fins;
+    rocket.data.weight.payload = W_payload;
+    rocket.data.weight.recovery = W_recovery;
+    rocket.data.weight.presstank = W_presstank;
+    rocket.data.weight.press = W_press;
+    rocket.data.weight.pbay1 = W_pbay1;
     rocket.data.weight.oxtank = W_oxtank;
-    rocket.data.weight.Ox = W_ox;
-    rocket.data.weight.Fuel = W_fuel;
+    rocket.data.weight.ox = W_ox;
+    rocket.data.weight.fuel = W_fuel;
     rocket.data.weight.fueltank = W_fueltank;
+    rocket.data.weight.pbay2 = W_pbay2;
     rocket.data.weight.engine = W_engine;
+    rocket.data.weight.fins = W_fins;
+    
     rocket.data.weight.propulsion = W_propulsion;
     rocket.data.weight.dry = W_dry;
     rocket.data.weight.wet = W_wet;
-    
-    rocket.data.length.L = L_nosecone + L_body; % total length, inches
+
+    %% TOTAL LENGTHS
+    % In order from top of rocket
     rocket.data.length.nosecone = L_nosecone;
     rocket.data.length.payload = L_payload;
-    rocket.data.length.engine = L_engine;
-    rocket.data.length.oxtank = L_oxtank;
+    rocket.data.length.recovery = L_recovery;
+    rocket.data.length.presstank = L_presstank;
+    rocket.data.length.pbay1 = L_pbay1;
     rocket.data.length.fueltank = L_fueltank;
-    rocket.geo.length.body = L_body;    % Body lengthm inches
-    rocket.geo.LD = rocket.data.length.L/rocket.geo.body.D;
+    rocket.data.length.oxtank = L_oxtank;
+    rocket.data.length.pbay2 = L_pbay2;
+    rocket.data.length.engine = L_engine;
+
+    rocket.geo.body.L = L_body;    % Body lengthm inches
+    rocket.data.length.body = L_body;    % Body lengthm inches
+    rocket.data.length.L = L_nosecone + L_body; % total length, inches
+    
+    rocket.geo.LD = rocket.data.length.L/rocket.geo.body.D; % fineness ratio
 
     
 end
