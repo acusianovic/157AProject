@@ -2,7 +2,7 @@ function [rocket] = oneDOFflightTrajectory(rocket)
 % Simulate rocket in 1D to get apogee, OTRS
 
 % simulation parameters
-simTime = 500;
+simTime = 300;
 dt = 0.01;
 N = simTime/dt;
 t = 0:dt:simTime-dt;
@@ -27,9 +27,10 @@ T_arr = zeros(N,1);
 D_arr = zeros(N,1);
 M_arr = zeros(N,1);
 rho_arr = zeros(N,1);
+a_arr = zeros(N,1);
 
 % Initial conditions
-v=0;y=0;x=0;dv=0;T=0;D=0;M=0;
+v=0;y=0;x=0;dv=0;T=0;D=0;M=0;a=0;
 
 % Begin simulation
 for i = 1:N
@@ -43,6 +44,7 @@ for i = 1:N
     T_arr(i)=T;
     D_arr(i)=D;
     M_arr(i)=M;
+    a_arr(i)=a;
     
     %[rho,P_a,~] = getAtm(y,0); % slug/ft3, psi
     [~, a, P_a, rho] = atmos(y/3.28);
@@ -60,7 +62,8 @@ for i = 1:N
     %% Thrust period
         dm = mdot*dt;
         T = mdot*cstar*getThrustCoefficient(rocket,P_a)/g;
-        dv = (T-D-(m/g)*g_gr)/(m/g)*dt;
+        a = (T-D-(m/g)*g_gr)/(m/g);
+        dv = a*dt;
         % track off the rail speed
         if y <= launch_tower_height
             OTRS = v;
@@ -70,13 +73,15 @@ for i = 1:N
     elseif v >= 0
     %% Coast period
         T = 0; dm = 0;
-        dv = (T-D-(m/g)*g_gr)/(m/g)*dt;
+        a = (T-D-(m/g)*g_gr)/(m/g);
+        dv = a*dt;
 
     elseif v < 0
     %% Descent period
         %D_p = 0.5*rho*v^2*S_p*C_dp; % parachute drag
         % no parachute for now
-        dv = (D-(m/g)*g_gr)/(m/g)*dt;
+        a = (D-(m/g)*g_gr)/(m/g);
+        dv = a*dt;
         break;
         
     end
@@ -105,6 +110,10 @@ if 0
     %%
     figure
     plot(t,M_arr)
+    
+    %%
+    figure
+    plot(t,a_arr/g)
 end
 %% Performance
 [apogee, ind] = max(y_arr);
@@ -113,5 +122,6 @@ rocket.data.performance.OTRS = OTRS;
 rocket.data.performance.apogee = apogee;
 rocket.data.performance.Mmax = max(M_arr); % mach number
 rocket.data.performance.Vmax = max(v_arr); % ft/s
+rocket.data.performance.maxg = max(a_arr)/g; 
 
 end

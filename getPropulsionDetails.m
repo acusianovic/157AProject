@@ -76,7 +76,8 @@ alpha = 15; % divergent half angle, degrees
 % nozzle length, in
 rocket.prop.Ln = ((rocket.prop.De-rocket.prop.Dt)/2)/tand(alpha);
 
-% Tank sizing
+%% Propellant Tank Sizing
+
 rocket.prop.m_ox = rocket.prop.m_p*(rocket.prop.OF/(rocket.prop.OF+1));
 rocket.prop.m_fuel = rocket.prop.m_p*(1/(rocket.prop.OF+1));
 rocket.prop.mdot_ox = rocket.prop.m_ox/rocket.prop.t_b;
@@ -90,6 +91,8 @@ rocket.prop.P_fuel = rocket.prop.PC + rocket.prop.DPfuel;
 sigma_y_al = 40000; % yield strength of 6061-T6 aluminum, psi
 rho_ox = 72.2; % oxygen density, lbm/ft3
 rho_fuel = 27.3753; % methane density, lbm/ft3
+
+ullage_margin = 0.15;
 rocket.prop.V_ox = rocket.prop.m_ox/rho_ox; % ox volume, ft3
 rocket.prop.V_fuel = rocket.prop.m_fuel/rho_fuel; % fuel volume, ft3
 
@@ -97,8 +100,18 @@ rocket.prop.t_ox = rocket.prop.P_ox*rocket.geo.body.D/2/(2*sigma_y_al/rocket.pro
 rocket.prop.t_fuel = rocket.prop.P_fuel*rocket.geo.body.D/2/(2*sigma_y_al/rocket.prop.FOS); % ox tank thickness, in
 
 Vcap = 4*pi/3*(rocket.geo.body.D/2/12)^3; % tank cap volume (for 2 caps), ft3
-rocket.prop.L_ox = rocket.geo.body.D + 12^3*(rocket.prop.V_ox-Vcap)/(pi/4*(rocket.geo.body.D)^2); % ox tank length, in
-rocket.prop.L_fuel = rocket.geo.body.D + 12^3*(rocket.prop.V_fuel-Vcap)/(pi/4*(rocket.geo.body.D)^2); % fuel tank length, in
+rocket.prop.L_ox = rocket.geo.body.D + 12^3*(rocket.prop.V_ox*(1+ullage_margin)-Vcap)/(pi/4*(rocket.geo.body.D)^2); % ox tank length, in
+rocket.prop.L_fuel = rocket.geo.body.D + 12^3*(rocket.prop.V_fuel*(1+ullage_margin)-Vcap)/(pi/4*(rocket.geo.body.D)^2); % fuel tank length, in
+rocket.prop.P_press = 4500; % pressurant tank pressure, psi (max pressure of an airsoft tank)
 
+Vtot = (rocket.prop.V_ox*rocket.prop.P_ox + rocket.prop.V_fuel*rocket.prop.P_ox)/rocket.prop.P_press*12^3; % total required pressurant volume at press tank pressure, in3
+VtotSTP = Vtot*rocket.prop.P_press/14.7/12^3; % vol at STP, ft3 or SCF 
+rocket.prop.L_press = rocket.geo.body.D + (Vtot-Vcap*12^3)/(pi/4*(rocket.geo.body.D)^2); % pressurant tank length, in
+
+rocket.prop.t_press = rocket.prop.P_press*rocket.geo.body.D/2/(2*sigma_y_al/rocket.prop.FOS); % ox tank thickness, in
+R_HE = 2.682897569; % psi*ft3/lb*R, for helium
+rocket.prop.m_press = rocket.prop.P_press*Vtot/12^3/(486*R_HE); % mass of helium, lbm
+
+%rocket.prop.L_presstank
 
 end

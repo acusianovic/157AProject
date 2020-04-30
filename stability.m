@@ -6,7 +6,7 @@ function rocket = stability(rocket)
     SM_dry = (rocket.aero.cp - rocket.data.CG.dry)./rocket.geo.body.D;
     SM_wet = (rocket.aero.cp - rocket.data.CG.wet)./rocket.geo.body.D;
     
-    plt = 0;
+    plt = 1;
     if plt
        figure 
        plot(aoa,SM_dry,aoa,SM_wet,'LineWidth',2);
