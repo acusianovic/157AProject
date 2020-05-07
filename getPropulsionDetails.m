@@ -5,34 +5,42 @@ function [rocket] = getPropulsionDetails(rocket)
 
 PC = rocket.prop.PC;
 
-[~,P_e,~] = getAtm(rocket.prop.expansion_h,0); % exit pressure in psi
+[~,~,P_e,~] = atmos(rocket.prop.expansion_h/3.28); % exit pressure in psi
+P_e = P_e/101325*14.7;
 rocket.prop.P_e = P_e;
 load('LOXCH4comb.mat','combustion');
 of = 2.5:0.0001:2.75;
 cstar = zeros(1,length(of));
 ct = zeros(1,length(of));
 Isp = zeros(1,length(of));
+
+rocket.prop.cstar_eff = 0.9; % combustion efficiency
+rocket.prop.ct_eff = 0.95; % nozzle efficiency
+
 for j = 1:length(of)
-    cstar(j) = combustion.cstar(PC,of(j));
+    cstar(j) = combustion.cstar(PC,of(j))*rocket.prop.cstar_eff;
     gam = combustion.gam(PC,of(j));
     c1 = gam+1;c2 = gam - 1;
     c3 = c1./c2;
-    ct(j) = sqrt(2*gam^2/c2*(2/c1)^c3*(1-(P_e/PC)^(c2/gam)));
+    ct(j) = sqrt(2*gam^2/c2*(2/c1)^c3*(1-(P_e/PC)^(c2/gam)))*rocket.prop.ct_eff;
     Isp(j) = cstar(j)*ct(j)/9.81;
 end
 %%
 % figure
-% plot(of,cstar)
+% plot(of,cstar,'LineWidth',2)
+% ylabel('Chracteristic Velocity, m/s')
 % hold on
 % yyaxis right
-% plot(of, Isp)
-rocket.prop.cstar_eff = 0.9; % combustion efficiency
-rocket.prop.ct_eff = 0.95; % nozzle efficiency
+% plot(of, Isp,'LineWidth',2)
+% ylabel('Specific Impulse, s')
+% grid on
+% xlabel('Mixture Ratio by Mass')
+%%
 
 [Isp_max, maxInd] = max(Isp);
 rocket.prop.OF = of(maxInd); % mixture ratio
-rocket.prop.cstar = cstar(maxInd)*rocket.prop.cstar_eff; % characteristic velocity, m/s
-rocket.prop.ct = ct(maxInd)*rocket.prop.ct_eff; % thrust coefficient, dim.
+rocket.prop.cstar = cstar(maxInd); % characteristic velocity, m/s
+rocket.prop.ct = ct(maxInd); % thrust coefficient, dim.
 rocket.prop.T = combustion.T(PC, rocket.prop.OF); % adiabatic flame temperature, K
 rocket.prop.gam = combustion.gam(PC, rocket.prop.OF); % specific heat ratio
 rocket.prop.mw = combustion.mw(PC, rocket.prop.OF); % molecular weight
@@ -53,7 +61,7 @@ rocket.prop.Vc = rocket.prop.Lstar*rocket.prop.At; % in3, chamber volume
 sigma_y_steel = 42100*thermal_knockdown; % yield strength of 303 steel, psi
 rocket.prop.Ac = 3*rocket.prop.At; % in2
 rocket.prop.ID = sqrt(4/pi*rocket.prop.Ac); % ID, % in
-rocket.prop.tc = PC*rocket.prop.ID/2/(2*sigma_y_steel/rocket.prop.FOS); % in
+rocket.prop.tc = PC*rocket.prop.ID/(2*sigma_y_steel/rocket.prop.FOS); % in
 rocket.prop.OD = rocket.prop.ID + 2*rocket.prop.tc * 2; % to account for double jacket;
 
 rocket.prop.cont = rocket.prop.Ac/rocket.prop.At; % contraction ratio
@@ -97,8 +105,8 @@ ullage_margin = 0.15;
 rocket.prop.V_ox = rocket.prop.m_ox/rho_ox; % ox volume, ft3
 rocket.prop.V_fuel = rocket.prop.m_fuel/rho_fuel; % fuel volume, ft3
 
-rocket.prop.t_ox = rocket.prop.P_ox*rocket.geo.body.D/2/(2*sigma_y_al/rocket.prop.FOS); % ox tank thickness, in
-rocket.prop.t_fuel = rocket.prop.P_fuel*rocket.geo.body.D/2/(2*sigma_y_al/rocket.prop.FOS); % ox tank thickness, in
+rocket.prop.t_ox = rocket.prop.P_ox*rocket.geo.body.D/(2*sigma_y_al/rocket.prop.FOS); % ox tank thickness, in
+rocket.prop.t_fuel = rocket.prop.P_fuel*rocket.geo.body.D/(2*sigma_y_al/rocket.prop.FOS); % ox tank thickness, in
 
 Vcap = 4*pi/3*(rocket.geo.body.D/2/12)^3; % tank cap volume (for 2 caps), ft3
 rocket.prop.L_ox = rocket.geo.body.D + 12^3*(rocket.prop.V_ox*(1+ullage_margin)-Vcap)/(pi/4*(rocket.geo.body.D)^2); % ox tank length, in
@@ -109,7 +117,7 @@ Vtot = (rocket.prop.V_ox*rocket.prop.P_ox + rocket.prop.V_fuel*rocket.prop.P_ox)
 VtotSTP = Vtot*rocket.prop.P_press/14.7/12^3; % vol at STP, ft3 or SCF 
 rocket.prop.L_press = rocket.geo.body.D + (Vtot-Vcap*12^3)/(pi/4*(rocket.geo.body.D)^2); % pressurant tank length, in
 
-rocket.prop.t_press = rocket.prop.P_press*rocket.geo.body.D/2/(2*sigma_y_al/rocket.prop.FOS); % ox tank thickness, in
+rocket.prop.t_press = rocket.prop.P_press*rocket.geo.body.D/(2*sigma_y_al/rocket.prop.FOS); % ox tank thickness, in
 R_HE = 2.682897569; % psi*ft3/lb*R, for helium
 rocket.prop.m_press = rocket.prop.P_press*Vtot/12^3/(486*R_HE); % mass of helium, lbm
 
