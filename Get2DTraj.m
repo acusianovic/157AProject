@@ -1,11 +1,11 @@
-function [rocket,t,x,h,vy,Ft,ay,ax,Fd] = Get2DTraj(rocket)
+function rocket = Get2DTraj(rocket)
 %2D flight trajectory simulator
 %   This function calculates the altitude and horizontal displacement of
-%   the rocket over time.  It is currently set to terminate at the apogee.
-%   This is changed by changing the condition in the while loop to h(step)
-%   >= 0 rather than vy(step) >= 0.  Outputs: apogee, OTRS
+%   the rocket over time.  It is also pre-configured to report dynamic
+%   pressure, mach number, speed of sound, etc.  We are currently using
+%   the Aerobee 150A drag model
 
-load('Aerobee150ADragData.mat','Aerobee150ADragData');
+%load('Aerobee150ADragData.mat','Aerobee150ADragData');
 
 %%% Physical Parameters %%%
 g0 = 32.174; %sea level gravitational acceleration [ft/s^2]
@@ -17,10 +17,10 @@ RocketDiam = rocket.geo.body.D/12; %body diameter [ft]
 cstar = rocket.prop.cstar*3.28; % characteristic velocity, ft/s
 mdot = rocket.prop.mdot/32.2; %[slugs/s] 
 LaunchAngle = 4*pi/180; %[rad]
-AOA = LaunchAngle; %angle of attack[rad] %%%%UPDATE LATER!!!
+AOA = LaunchAngle; %angle of attack[rad]
 Ft = 0;
 
-%%% Define rocket masses %%%
+%%% Define and convert rocket masses %%%
 DryMass = rocket.data.weight.dry/32.2; %[slugs]
 WetMass = rocket.data.weight.wet/32.2; %[slugs]
 m = WetMass; %wet mass [slugs]
@@ -35,12 +35,12 @@ v = sqrt(vx^2+vy^2); %velocity mag [ft/s]
 ax = 0; %x acceleration [ft/s^2]
 ay =0; %y acceleration [ft/s^2]
 
-%%% Recovery Altitude %%%
-RecoveryAltitude = 0; %[ft]
-DrogueArea = (pi/4)^RocketDiam^2; %[ft^2]
-ChuteArea = (pi/4)^RocketDiam^2;
-CdDrogue = 0.75;
-CdChute = 1.5;
+%%% Recovery Parameters %%%
+RecoveryAltitude = 1000; %[ft]
+DrogueArea = (pi/4)*2^2; %[ft^2]
+ChuteArea = (pi/4)*5^2; %[ft^2]
+CdDrogue = 0.5;
+CdChute = 0.9;
 
 %%% Loop Parameters %%%
 dt = 0.001; %time step [s]
@@ -52,14 +52,14 @@ ThrustCounter = 0; %for finding burnout parameters later
 DrogueDeployed = 0;
 ChuteDeployed = 0;
 
-while vy(step) >= 0 && step <= MaxIterations %currently only calculating up to apogee
+while vy(step) >= 0 && step <= MaxIterations
     
     %%% Forces %%%
     
     %Thust
     if m(step) > DryMass %during burn
         %update ambient pressure
-        [~, SOS, Pa, rho] = atmos(h(step)/3.28);
+        [~, SOS, Pa, rho] = atmos(h(step)/3.28); %get speed of sound, pressure, density
         Pa = Pa/101325*14.7; % psi
         %update thrust
         Ft(step+1) = mdot*cstar*getThrustCoefficient(rocket,Pa);
@@ -81,25 +81,29 @@ while vy(step) >= 0 && step <= MaxIterations %currently only calculating up to a
 
     %Drag
     %local air density
-    rhoAir = rho/515.379; % [slugs/ft^3]
+    rhoAir(step) = rho/515.379; % [slugs/ft^3]
     
     %mach number
-    M = v(step)/(SOS*3.28);
+    %M(step) = v(step)/(SOS*3.28);
     
     %choose drag coefficient
-    if M < 7
-        Cd(step) = lininterp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),M);
+    %{
+    if M(step) < 7
+        Cd(step) = lininterp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),M(step));
     else
         Cd(step) = min(Aerobee150ADragData(2,:));
     end
+    %}
     
     %choose drag area
     if vy(step) == 0 %no liftoff
         Af = 0;
         sign = 0;
+        [Cd(step),M(step)] = getDrag2( rocket );
     elseif vy(step) > 0 %before apogee
         Af = (pi/4)*RocketDiam^2; %[ft^2]
         sign = -vy(step)/abs(vy(step));
+        [Cd(step),M(step)] = getDrag2( rocket );
     elseif vy(step) < 0 && h(step) > RecoveryAltitude && ChuteDeployed == 0 %after apogee, before main chute deployment
         if DrogueDeployed == 0
             DrogueDeployed = 1;
@@ -107,19 +111,20 @@ while vy(step) >= 0 && step <= MaxIterations %currently only calculating up to a
         end
         Af = DrogueArea; %[ft^2]
         AOA = 0;
-        %Cd(step) = CdDrogue;
+        Cd(step) = CdDrogue;
         sign = -vy(step)/abs(vy(step));
     else %after apogee, after main chute deployment
         if ChuteDeployed == 0
             ChuteDeployed = 1;
-            fprintf( '\nMain parachute deployed at %f s and %f ft', t(step), h(step))
+            fprintf( '\nMain parachute deployed at %f s and %f ft\n', t(step), h(step))
         end
         Af = ChuteArea; %[ft^2]
-        sign = vy(step)/abs(vy(step));
-        %Cd(step) = CdChute;
+        sign = -vy(step)/abs(vy(step));
+        Cd(step) = CdChute;
     end
-    Fd(step) = sign*0.5*rhoAir*v(step)^2*Af*Cd(step);
-
+    Fd(step) = sign*0.5*rhoAir(step)*v(step)^2*Af*Cd(step);
+    q(step) = 0.5*rhoAir(step)*v(step)^2;
+    
     %%% Kinematics %%%
     
     %calculate net force in each direction
