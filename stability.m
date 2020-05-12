@@ -8,6 +8,7 @@ function rocket = stability(rocket)
     
     plt = 0;
     if plt
+        %%
        figure 
        plot(aoa,SM_dry,aoa,SM_wet,'LineWidth',2);
        xlabel('Angle of Attack, degrees')

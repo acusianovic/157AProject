@@ -59,12 +59,12 @@ function [rocket] = getWeightLength(rocket)
     
     %% Engine
     rho_steel = 490.752; % steel density
-    t = rocket.prop.tc;
+    t = 2*rocket.prop.tc;
     OD = rocket.prop.OD;
     A = pi/4*(OD^2-(OD-2*t)^2);
     L_engine = rocket.prop.Lc + rocket.prop.Lfrustum + rocket.prop.Ln; % in
     % approximate total weight assuming total length is cylinder
-    W_engine = A*L_engine*rho_steel/12^3; % lbm
+    W_engine = 1.35*A*L_engine*rho_steel/12^3; % lbm
 
     %% Body
     L_body = L_payload+L_recovery+L_presstank+L_pbay1+L_oxtank+L_fueltank+L_pbay2+L_engine;
