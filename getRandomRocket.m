@@ -8,7 +8,7 @@ rocket.geo.body.D = 11 + rand()*(15 - 11); %in, body diameter
 % later to be dependent on propellant volume
 
 %% Nosecone
-rocket.geo.nc.L = 2 + rand()*(4 - 2); % feet
+rocket.geo.nc.L = 7 + rand()*(4 - 2); % feet
 rocket.geo.nc.Shape = randi(3);
 rocket.geo.nc.tn = 0.12;        % Thickness, in (change later)
 
@@ -57,15 +57,8 @@ elseif rocket.geo.nc.Shape == 3     % Elliptical
     VOuter = pi*trapz(x,y);
     VInner = pi*trapz(x,yInner);
 end
-% Derivative of yN
-dy = zeros(1,length(y));
-dy(1) = (y(2) - y(1))/dx;
-dy(length(y)) = (y(length(y)) - y(length(y)-1))/dx;
-for ii = 2:length(y)-1
-    dy(ii) = ( y(ii+1) - y(ii) )/ dx;
-end
-% Surface Area of Nose Cone(ft^2)
-rocket.geo.nc.S = 2*pi*trapz(x,y.*sqrt(1 + dy.^2));
+
+
 rocket.geo.nc.V = VOuter - VInner; % Volume in ft^3;
 
 %% fin, NACA 0010 Airfoil
