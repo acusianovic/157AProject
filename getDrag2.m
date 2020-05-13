@@ -4,11 +4,11 @@ function [Cd,M] = getDrag2(rocket,h,v)
 d = rocket.geo.body.D; %[in]
 L = rocket.data.length.L; %total length [in]
 Sb = pi*(d)*L; %body surface area [in^2]
-Cr = rocket.geo.fin.c; %fin root chord [in]
+Cr = rocket.geo.fin.c*12; %fin root chord [in]
 lambda = rocket.geo.fin.TR;
 tc = rocket.geo.fin.ThR; %nondimensional fin thickness []
 nf = rocket.geo.fin.n;%number of fins
-Sf = rocket.geo.fin.S; %fin surface area [in^2]
+Sf = rocket.geo.fin.S*144; %fin surface area [in^2]
 Lp = 0; %launch lug length [in]
 Lap = 0; %nose to launch lug length [in]
 Ap = 0; %maximum cross section area of launch lug [in^2]
@@ -169,6 +169,7 @@ end
 
 %% Drag due to rivets, joints,....
 
+% Sr = Sb + Sf + Sp;              % Total Wetted Area of Rocket
 Sr = Sb + Sf + Sp + Sn;              % Total Wetted Area of Rocket
 
 if M < 0.78
@@ -196,7 +197,7 @@ if M <= 0.6
     CdBase = Kb*(db/d)^n/sqrt(CdFriction);
 elseif M < 1
     fb = 1 + 215.8*(M - 0.6)^6;
-    CdBase(ii) = Kb*(db/d)^n/sqrt(CdFriction) * fb;
+    CdBase = Kb*(db/d)^n/sqrt(CdFriction) * fb;
 elseif M <= 2
     fb = 2.0881*(M - 1)^3 - 3.7938*(M - 1)^2 ...
         +1.4618*(M - 1) + 1.883917;
@@ -258,9 +259,12 @@ end
 %% Total Drag Coeff.
 Cd = CdB + Kf*CdF + Kf*CdP +Cde + CdBase + delCdT + delCdS;
 
-%%%Overwrite instability at high Mach
-if M >= 3.5
-   Cd = 0.2; 
+%%% Overwrite instabilities
+if M < 0.8
+   Cd = 0.35;
+elseif M >= 3.5
+    Cd = 0.246;
 end
+
 
 end
