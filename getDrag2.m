@@ -266,5 +266,8 @@ elseif M >= 3.5
     Cd = 0.246;
 end
 
+if h >= 2e5
+    Cd = 0.246;
+end
 
 end
