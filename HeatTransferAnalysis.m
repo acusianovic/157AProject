@@ -88,18 +88,24 @@ set(m,'T',Tl,'P',PC*1.25/14.7*oneatm)
 
 %%
 k_SS = 16.26; % W / m-k
-hl = 4000:10:10000;
+hl = 10000:10:60000;
 q = (T0-Tl)./(1./hg0+tc./k_SS+1./hl);
 Twg = T0 - q./hg0;
-Twg_max = 1648.15*0.8;
+Twg_max = 660;
 
 figure
 hold on
-plot(hl, q)
+plot(hl, q,'LineWidth',2)
+ylabel('Heat Flux W/m2')
 yyaxis right
-plot(hl, Twg)
+plot(hl, Twg,'LineWidth',2)
+xlabel('Liquid Side Heat Transfer Coefficient, W/m2-K')
+ylabel('Wall-side Gass Temperature, K')
 yline(Twg_max,'r--','LineWidth',2);
 legend('q','Twg')
+grid on
+set(gca, 'FontSize', 12, 'FontWeight', 'bold')
+
 
 %%
 hl_min = ((T0-Tl)/(hg0*(T0-Twg_max))-1/hg0-tc/k_SS)^-1;

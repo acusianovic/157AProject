@@ -66,8 +66,6 @@ for j = 1:length(PC)
     end
     [optcstar(j), ind] = max(cstar(j,:));
     optOF(j) = OF(ind);
-    
-    
 end
 %%
 fprintf("Done");
@@ -96,7 +94,7 @@ zlabel('Cstar m/s')
 %shading interp
 set(gca, 'FontSize', 12, 'FontWeight', 'bold')
 plot3(PC,optOF,optcstar,'r','LineWidth',2)
-
+%ylim([2.53 2.7])
 %%
 figure
 plot(PC,optOF,'LineWidth',2)

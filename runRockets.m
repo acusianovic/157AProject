@@ -221,12 +221,16 @@ ylabel('Apogee, miles')
 figure
 plot(PC, m_propulsion,'o','LineWidth',2)
 xlabel('Chamber Pressure, psi'); ylabel('Prop System Mass, lbm')
+grid on
+set(gca, 'FontSize', 11, 'FontWeight', 'bold')
 
 %% Higher PC -> greater Isp
 figure
 plot(PC, Isp,'o','LineWidth',2)
 xlabel('Chamber Pressure, psi'); ylabel('Specific Impulse, s')
 grid on
+
+set(gca, 'FontSize', 11, 'FontWeight', 'bold')
 
 %% Higher PC -> less propellant needed
 figure
