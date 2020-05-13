@@ -25,8 +25,6 @@ if rocket.geo.nc.Shape == 1         % Von Karman
     for ii = 1:length(y)
         if yInner(ii) < 0
             yInner(ii) = 0;
-        else
-            break
         end
     end
   % Rotating curves around x axis
@@ -40,8 +38,6 @@ elseif rocket.geo.nc.Shape == 2     % 1/2 Power
     for ii = 1:length(y)
         if yInner(ii) < 0
             yInner(ii) = 0;
-        else
-            break
         end
     end
   % Rotating curves around x axis
@@ -55,15 +51,21 @@ elseif rocket.geo.nc.Shape == 3     % Elliptical
     for ii = 1:length(y)
         if yInner(ii) < 0
             yInner(ii) = 0;
-        else
-            break
         end
     end
   % Rotating curves around x axis
     VOuter = pi*trapz(x,y);
     VInner = pi*trapz(x,yInner);
 end
-
+% Derivative of yN
+dy = zeros(1,length(y));
+dy(1) = (y(2) - y(1))/dx;
+dy(length(y)) = (y(length(y)) - y(length(y)-1))/dx;
+for ii = 2:length(y)-1
+    dy(ii) = ( y(ii+1) - y(ii) )/ dx;
+end
+% Surface Area of Nose Cone(ft^2)
+rocket.geo.nc.S = 2*pi*trapz(x,y.*sqrt(1 + dy.^2));
 rocket.geo.nc.V = VOuter - VInner; % Volume in ft^3;
 
 %% fin, NACA 0010 Airfoil

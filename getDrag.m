@@ -16,6 +16,7 @@ Lp = 0; %launch lug length [in]
 Lap = 0; %nose tip to launch lug distance [in]
 Ap = 0; %maximum cross section area of launch lug [in^2]
 db = d; % diameter at base (equal to body diameter for no boatail)
+
 % h = altitude [ft]
 % L is the total length of the rocket [in]
 % xTc = the location of maximum thickness of airfoil [in]
