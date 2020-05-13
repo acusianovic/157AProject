@@ -87,9 +87,9 @@ CnaT = CnaN + CnaFB + CnaB;
 % Center of Press.
 xCP = (CnaN*xN + CnaFB*xF + CnaB*xB)./CnaT;
 
-rocket.aero.cp = xCP*12; % in
+rocket.data.aero.cp = xCP*12; % in
 %rocket.aero.nc.SA = SA_nose;
-rocket.aero.cp_aoa = AoA;
+rocket.data.aero.cp_aoa = AoA;
 
 end
 
