@@ -58,7 +58,15 @@ elseif rocket.geo.nc.Shape == 3     % Elliptical
     VInner = pi*trapz(x,yInner);
 end
 
-
+% Derivative of yN
+dy = zeros(1,length(y));
+dy(1) = (y(2) - y(1))/dx;
+dy(length(y)) = (y(length(y)) - y(length(y)-1))/dx;
+for ii = 2:length(y)-1
+    dy(ii) = ( y(ii+1) - y(ii) )/ dx;
+end
+% Surface Area of Nose Cone(ft^2)
+rocket.geo.nc.S = 2*pi*trapz(x,y.*sqrt(1 + dy.^2));
 rocket.geo.nc.V = VOuter - VInner; % Volume in ft^3;
 
 %% fin, NACA 0010 Airfoil
