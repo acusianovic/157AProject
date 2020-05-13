@@ -275,6 +275,11 @@ CdF_cor = CdF*Kf;
 CdP_cor = CdP*Kf;
 Cd = CdB + CdF_cor + CdP_cor + Cde + CdBase + delCdT + delCdS; 
 
+% if M <= 0.8
+%     Cd = 0.325;
+% elseif M >= 3.5
+%     Cd = 0.235;
+% end
 
 end
 
