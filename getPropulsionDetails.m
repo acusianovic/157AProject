@@ -4,6 +4,7 @@ function [rocket] = getPropulsionDetails(rocket)
 
 [~,P_exit,~] = getAtm(rocket.prop.expansion_h,0); % exit pressure in psi
 rocket.prop.P_e = P_exit;
+P_chamber = rocket.prop.PC;
 load('LOXCH4comb.mat','combustion');
 OF = 2.5:0.0001:3;
 
@@ -13,12 +14,13 @@ rocket.prop.ct_eff = 0.95; % nozzle efficiency
 cstar = zeros(1,length(OF));
 ct = zeros(1,length(OF));
 Isp = zeros(1,length(OF));
+gam = zeros(1,length(OF));
 for j = 1:length(OF)
     cstar(j) = combustion.cstar(P_chamber,OF(j));
-    gam = combustion.gam(P_chamber,OF(j));
-    c1 = gam+1;c2 = gam-1;
+    gam(j) = combustion.gam(P_chamber,OF(j));
+    c1 = gam(j)+1;c2 = gam(j)-1;
     c3 = c1./c2;
-    ct(j) = sqrt(2*gam^2/c2*(2/c1)^c3*(1-(P_exit/P_chamber)^(c2/gam)));
+    ct(j) = sqrt(2*gam(j)^2/c2*(2/c1)^c3*(1-(P_exit/P_chamber)^(c2/gam(j))));
     Isp(j) = cstar(j)*ct(j)/9.81;
 end
 
@@ -28,7 +30,7 @@ ct = ct*rocket.prop.cstar_eff; % dim.
 rocket.prop.t_b = rocket.prop.Itot/rocket.prop.F; % s
 m_p = rocket.prop.Itot./Isp; % lbm
 mdot = m_p/rocket.prop.t_b; % lbm/s
-At = rocket.prop.Itot./(P_chamber.*ct*rocket.prop.t_b); % in2
+At = rocket.prop.Itot./(P_chamber.*ct.*rocket.prop.t_b); % in2
 
 rocket.prop.Lstar = 50; % characteristic chamber length, in, dependent on propellant
 rocket.prop.FOS = 1.5; % chamber factor of safety
@@ -40,7 +42,7 @@ SS310 = struct('strength',19300,'density',492.6);  % psia, lbm/ft3
 V_chamber = rocket.prop.Lstar.*At; % in3
 A_chamber = 3.*At; % in2
 ID = sqrt(4./A_chamber); % in
-t_chamber = P_chamber.*ID/2/(2*SS310.density/rocket.prop.FOS); % in
+t_chamber = P_chamber.*ID/2/(SS310.strength/rocket.prop.FOS); % in
 OD = ID + 2.*t_chamber * 2; % in, to account for double jacket;
 theta = 30; % contraction angle degrees
 Dt = sqrt(4.*At/pi); % throat diameter, in
@@ -48,8 +50,21 @@ Dt = sqrt(4.*At/pi); % throat diameter, in
 L1 = (ID-Dt)/(2*tand(theta)); % conical frustum length, in
 cont = A_chamber./At; % contraction ratio
 L_chamber = (V_chamber-A_chamber.*L1)./(A_chamber.*(1+sqrt(At./A_chamber)+At./A_chamber));
-m_chamber = ID+2.*t_chamber*pi.*L_chamber*SS310.density/12^3;
 
+
+%% nozzle sizing
+c1=gam(j)+1;c2=gam(j)-1;
+Me = sqrt(2./c2.*((P_chamber./P_exit).^(c2./gam)-1));
+Ae = At./Me.*((1+c2./2.*Me.^2)./(c1./2)).^(c1./(2.*c2));
+De = sqrt(4.*Ae./pi);
+exp = Ae./At;
+% assume conicalnozzle, can refine later to be bell nozzle to minimize
+% divergence losses
+alpha = 15; % divergent half angle, degrees
+% nozzle length, in
+Ln = ((De-Dt)/2)/tand(alpha);
+
+m_chamber = ID+2.*t_chamber*pi.*(L_chamber+Ln+L1)*SS310.density/12^3;
 
 %% Propellant Tank Sizing
 
@@ -77,7 +92,7 @@ V_press_STP = rocket.prop.P_press/14.7; % vol at STP, ft3 or SCF
 R_HE = 2.682897569; % psi*ft3/lb*R, for helium
 m_press = rocket.prop.P_press.*V_press/(486*R_HE); % mass of helium, lbm
 
-D = rocket.geo.body.D*12; % in
+D = rocket.geo.body.D; % in
 [rocket.prop.t_oxtank,L_oxtank,m_oxtank] = vessel(rocket.prop.P_ox,D,V_oxtank,Al6061,1.5); % in, in, lbm
 [rocket.prop.t_fueltank,L_fueltank,m_fueltank] = vessel(rocket.prop.P_fuel,D,V_fueltank,Al6061,1.5); % in, in, lbm
 [rocket.prop.t_presstank,L_presstank,m_presstank] = vessel(rocket.prop.P_press,D,V_press,Al6061,1.5); % in, in, lbm
@@ -108,6 +123,11 @@ rocket.prop.ID = ID(Ind);
 rocket.prop.OD = OD(Ind);
 rocket.prop.Lfrustum = L1(Ind);
 
+rocket.prop.Me = Me(Ind);
+rocket.prop.Ae = Ae(Ind);
+rocket.prop.Ln = Ln(Ind);
+rocket.prop.De = De(Ind);
+
 rocket.prop.m_ox = m_ox(Ind);
 rocket.prop.V_ox = V_ox(Ind);
 rocket.prop.L_ox = L_oxtank(Ind);
@@ -123,31 +143,21 @@ rocket.prop.V_press = V_press(Ind);
 rocket.prop.L_press = L_presstank(Ind);
 rocket.prop.m_presstank = m_presstank(Ind);
 
-% figure
-% hold on
-% yyaxis left
-% plot(OF,Isp)
-% yyaxis right
-% plot(OF,mtot)
+figure
+hold on
+yyaxis left
+plot(OF,Isp)
+yyaxis right
+plot(OF,mtot)
 
-%% nozzle sizing
-gam = rocket.prop.gam;c1=gam+1;c2=gam-1;
-rocket.prop.Me = sqrt(2/c2*((P_chamber/P_exit)^(c2/gam)-1));
-rocket.prop.Ae = rocket.prop.At/rocket.prop.Me*((1+c2/2*rocket.prop.Me^2)/(c1/2))^(c1/(2*c2));
-rocket.prop.De = sqrt(4*rocket.prop.Ae/pi);
-rocket.prop.exp = rocket.prop.Ae/rocket.prop.At;
-% assume conicalnozzle, can refine later to be bell nozzle to minimize
-% divergence losses
-alpha = 15; % divergent half angle, degrees
-% nozzle length, in
-rocket.prop.Ln = ((rocket.prop.De-rocket.prop.Dt)/2)/tand(alpha);
 
-    function [t,L,m] = vessel(P,D,V,Mat,FoS)
-        R = D/2;
-        l = (V*12^3-4/3*pi*R^3)/(pi*R^2);
-        L = l+D;
-        SA = 2*pi*R*l+4*pi*R^2;
-        t = R*P/Mat.strength*FoS;
-        m = SA.*t/12^3*Mat.density;
-    end
+end
+
+function [t,L,m] = vessel(P,D,V,Mat,FoS)
+    R = D/2;  % in
+    l = (V*12^3-4/3*pi*R^3)/(pi*R^2); % cylindrical length, in3
+    L = l+D;   % total length, in
+    SA = 2*pi*R*l+4*pi*R^2;
+    t = R*P/Mat.strength*FoS;
+    m = SA.*t/12^3*Mat.density;
 end
