@@ -14,7 +14,7 @@ P = 2116*((T+459.7)/518.6)^(5.256); % psf
 
 A = 1.337*AR^3*P*(lamba + 1)/(2*(AR+2)*tc^3);
 
-rocket.aero.flutter = a*sqrt(G*144/A); % ft/s
+rocket.data.aero.flutter = a*sqrt(G*144/A); % ft/s
 
 end
 
