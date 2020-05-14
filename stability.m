@@ -1,4 +1,4 @@
-function rocket = stability(rocket)
+function [rocket] = stability(rocket)
 
     % static stability with wet mass (Cp-Cg)/D
     % static stability with dry mass (Cp-Cg)/D
