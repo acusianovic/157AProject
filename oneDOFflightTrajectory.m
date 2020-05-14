@@ -15,7 +15,6 @@ t_b = rocket.prop.t_b;  % burn time, s
 cstar = rocket.prop.cstar*3.28; % characteristic velocity, ft/s
 S = pi/4*rocket.geo.body.D^2/144; % reference area, ft2
 
-Cd = rocket.aero.Cd;
 g = 32.174;
 R_e = 3.67E6*3.28; % earth radius, ft
 

@@ -7,7 +7,7 @@ g = 0; % good rockets
 b = 0; % bad rockets
 n = 0;
 vg = 0;
-numGoodRockets = 25;
+numGoodRockets = 10;
 resultRockets = struct(['Good','Bad'],{});
 % while we have less than (n) good rockets:
 fprintf('Finding good rockets... \n')
