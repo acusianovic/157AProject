@@ -1,5 +1,4 @@
 function [rocket] = checkFlutter(rocket)
-% marker 1 = pass
 
 % Shear Modulus of Carbon Fiber
 G = 4.5e6;            % psi

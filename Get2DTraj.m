@@ -1,45 +1,26 @@
 function rocket = Get2DTraj(rocket)
 %2D flight trajectory simulator
 %   This function calculates the altitude and horizontal displacement of
-%   the rocket over time.  It is currently set to terminate at the apogee.
-%   This is changed by changing the condition in the while loop to h(step)
-%   >= 0 rather than vy(step) >= 0.  Outputs: apogee, OTRS
+%   the rocket over time.  It is also pre-configured to report dynamic
+%   pressure, mach number, speed of sound, etc.  We are currently using
+%   the Aerobee 150A drag model
 
-load('Aerobee150ADragData.mat','Aerobee150ADragData');
+%load('Aerobee150ADragData.mat','Aerobee150ADragData');
 
 %%% Physical Parameters %%%
 g0 = 32.174; %sea level gravitational acceleration [ft/s^2]
-Pa = 14.7; %sea level atmsopheric pressure [psia]
-LRL = 160;
 
 %%% Define and Re-Name Rocket Geometry %%%
 RocketDiam = rocket.geo.body.D/12; %body diameter [ft]
-L = rocket.geo.body.L; %length of body [in]
-Sb = pi*RocketDiam*12*L; %body surface area [in^2]
-nf = rocket.geo.fin.n; %number of fins
-Sf = rocket.geo.fin.S_wet/144; %fin surface area [in^2]
-Ln = rocket.geo.nc.L; %length of the nosecone [in]
-L0 = L - Ln; %body length [in]
-db = RocketDiam*12; %rocket diameter in inches 
-xTc = rocket.geo.fin.h_t; %distance from fin leading edge to maximum thickness
-Cr = rocket.geo.fin.c; %fin root chord [in]
-Ct = rocket.geo.fin.c*rocket.geo.fin.TR; %fin tip chord [in]
-tc = rocket.geo.fin.ThR*rocket.geo.fin.c; %fin thickness [in]
-Sp = 0; %launch lug wetted area [in^2]
-Lp = 0; %launch lug length [in]
-Lap = 0; %nose tip to launch lug distance [in]
-Ap = 0; %maximum cross section area of launch lug [in^2]
 
 %%% Define Propulsion Details %%%
-Isp = rocket.prop.Isp; % [s]
-NozzleExitArea = rocket.prop.Ae; %[in^2]
+cstar = rocket.prop.cstar*3.28; % characteristic velocity, ft/s
 mdot = rocket.prop.mdot/32.2; %[slugs/s] 
 LaunchAngle = 4*pi/180; %[rad]
-AOA = LaunchAngle; %angle of attack[rad] %%%%UPDATE LATER!!!
-Pe = rocket.prop.P_e; %assume perfectly expanded at sea level!
+AOA = LaunchAngle; %angle of attack[rad]
 Ft = 0;
 
-%%% Define rocket masses %%%
+%%% Define and convert rocket masses %%%
 DryMass = rocket.data.weight.dry/32.2; %[slugs]
 WetMass = rocket.data.weight.wet/32.2; %[slugs]
 m = WetMass; %wet mass [slugs]
@@ -54,34 +35,40 @@ v = sqrt(vx^2+vy^2); %velocity mag [ft/s]
 ax = 0; %x acceleration [ft/s^2]
 ay =0; %y acceleration [ft/s^2]
 
-%%% Recovery Altitude %%%
-RecoveryAltitude = 300000; %[ft]
+%%% Recovery Parameters %%%
+RecoveryAltitude = 1000; %[ft]
+DrogueArea = (pi/4)*2^2; %[ft^2]
+ChuteArea = (pi/4)*5^2; %[ft^2]
+CdDrogue = 0.5;
+CdChute = 0.9;
 
 %%% Loop Parameters %%%
-dt = 0.1; %time step [s]
+dt = 0.001; %time step [s]
 step = 1; %count loop iterations
 MaxIterations = 10^6; %force stop condition
 
 %counters
 ThrustCounter = 0; %for finding burnout parameters later
+DrogueDeployed = 0;
 ChuteDeployed = 0;
 
-while vy(step) >= 0 && step <= MaxIterations %currently only calculating up to apogee
+while vy(step) >= 0 && step <= MaxIterations
     
     %%% Forces %%%
     
     %Thust
     if m(step) > DryMass %during burn
         %update ambient pressure
-        [~, ~, Pa, rho] = atmos(h(step)/3.28);
+        [~, SOS, Pa, rho] = atmos(h(step)/3.28); %get speed of sound, pressure, density
         Pa = Pa/101325*14.7; % psi
         %update thrust
-        Ft(step+1) = mdot*g0*Isp+(Pe-Pa)*NozzleExitArea; %[lbf]
+        Ft(step+1) = mdot*cstar*getThrustCoefficient(rocket,Pa);
         %update mass
         m(step+1) = m(step)-mdot*dt; %[slugs]
         %update thrust counter
         ThrustCounter = ThrustCounter+1;
     else %after burn
+        [~, SOS, ~, rho] = atmos(h(step)/3.28);
         Ft(step+1) = 0;
         m(step+1) = m(step);
     end
@@ -93,35 +80,51 @@ while vy(step) >= 0 && step <= MaxIterations %currently only calculating up to a
     Fg(step) = -m(step)*g;
 
     %Drag
-    %get local air density
-    rhoAir = rho/515.379; % [slugs/ft^3]
-    %get speed of sound
-    if h(step) < 37000           
-        SOS = -0.004*h(step) + 1116.45;
-    elseif h(step) <= 64000
-        SOS = 968.08;
-    else
-        SOS = 0.0007*h(step) + 924.99;
-    end
+    %local air density
+    rhoAir(step) = rho/515.379; % [slugs/ft^3]
+    
+    %mach number
+    %M(step) = v(step)/(SOS*3.28);
+    
     %choose drag coefficient
-    Cd(step) = interp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),v(step)/SOS);
+    %{
+    if M(step) < 7
+        Cd(step) = lininterp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),M(step));
+    else
+        Cd(step) = min(Aerobee150ADragData(2,:));
+    end
+    %}
+    
     %choose drag area
-    if vy(step) > 0 %before apogee
+    if vy(step) == 0 %no liftoff
+        Af = 0;
+        sign = 0;
+        [Cd(step),M(step)] = getDrag2( rocket );
+    elseif vy(step) > 0 %before apogee
         Af = (pi/4)*RocketDiam^2; %[ft^2]
+        sign = -vy(step)/abs(vy(step));
+        [Cd(step),M(step)] = getDrag2( rocket );
     elseif vy(step) < 0 && h(step) > RecoveryAltitude && ChuteDeployed == 0 %after apogee, before main chute deployment
-        Af = (pi/4)*RocketDiam^2; %[ft^2]
+        if DrogueDeployed == 0
+            DrogueDeployed = 1;
+            fprintf( '\nDrogue deployed at %f s and %f ft', t(step), h(step))
+        end
+        Af = DrogueArea; %[ft^2]
         AOA = 0;
+        Cd(step) = CdDrogue;
+        sign = -vy(step)/abs(vy(step));
     else %after apogee, after main chute deployment
         if ChuteDeployed == 0
             ChuteDeployed = 1;
-            fprintf( 'Main parachute deployed at %f s and %f ft', t(step), h(step))
+            fprintf( '\nMain parachute deployed at %f s and %f ft\n', t(step), h(step))
         end
-        Af = (pi/4)*24^2; %[ft^2]
-        Cd(step) = interp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),v(step)/SOS);
-        AOA = 0;
+        Af = ChuteArea; %[ft^2]
+        sign = -vy(step)/abs(vy(step));
+        Cd(step) = CdChute;
     end
-    Fd(step) = (-vy(step)/abs(vy(step)))*0.5*rhoAir*v(step)^2*Af*Cd(step);
-
+    Fd(step) = sign*0.5*rhoAir(step)*v(step)^2*Af*Cd(step);
+    q(step) = 0.5*rhoAir(step)*v(step)^2;
+    
     %%% Kinematics %%%
     
     %calculate net force in each direction
@@ -137,16 +140,14 @@ while vy(step) >= 0 && step <= MaxIterations %currently only calculating up to a
     %position
     x(step+1) = x(step)+vx(step)*dt;
     h(step+1) = h(step)+vy(step)*dt;
-    if h(step+1) <= 0 && step < 100 || v(step+1) <= 0 %we haven't lifted off yet
+    if ( h(step+1) <= 0 || v(step+1) <= 0 ) && step < 100 %we haven't lifted off yet
         x(step+1) = 0;
         h(step+1) = 0;
         vy(step+1) = 0;
     end
-    LRL = 160;
     %%% find OTRS %%%
-    if sqrt(x(step)^2+h(step)^2) <= LRL
+    if sqrt(x(step)^2+h(step)^2) <= 160
         OTRS = v(step);
-        OTRSPosition = step;
     end
     
     %update time
@@ -163,4 +164,3 @@ rocket.data.performance.apogee = h(step); %[ft]
 rocket.data.performance.range = x(step); %[ft]
 
 end
-

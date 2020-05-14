@@ -1,7 +1,7 @@
 %2D Trajectory Code (in progress)
 %Main Author: JP
 
-clear variables;close all;clc
+%clear variables;close all;clc
 
 %%% Load Atmospheric Model %%%
 load('AtmosphericPressureModel.mat', 'PressureAltitude','AtmosphericPressure');

@@ -105,7 +105,7 @@ rocket.prop.L_ox = rocket.geo.body.D + 12^3*(rocket.prop.V_ox*(1+ullage_margin)-
 rocket.prop.L_fuel = rocket.geo.body.D + 12^3*(rocket.prop.V_fuel*(1+ullage_margin)-Vcap)/(pi/4*(rocket.geo.body.D)^2); % fuel tank length, in
 rocket.prop.P_press = 4500; % pressurant tank pressure, psi (max pressure of an airsoft tank)
 
-Vtot = (rocket.prop.V_ox*rocket.prop.P_ox + rocket.prop.V_fuel*rocket.prop.P_fuel)/rocket.prop.P_press*12^3; % total required pressurant volume at press tank pressure, in3
+Vtot = (rocket.prop.V_ox*rocket.prop.P_ox + rocket.prop.V_fuel*rocket.prop.P_ox)/rocket.prop.P_press*12^3; % total required pressurant volume at press tank pressure, in3
 VtotSTP = Vtot*rocket.prop.P_press/14.7/12^3; % vol at STP, ft3 or SCF 
 rocket.prop.L_press = rocket.geo.body.D + (Vtot-Vcap*12^3)/(pi/4*(rocket.geo.body.D)^2); % pressurant tank length, in
 
