@@ -16,7 +16,7 @@ delCds = zeros(length(v),1);
 
 
 for j = 1:length(v)
-    [Cd(j),CdB(j),CdF(j),CdP(j),Cde(j),CdBase(j),delCdT(j),delCds(j)] = getDrag(10000,v(j),aeroBee);  
+    [Cd(j),CdB(j),CdF(j),CdP(j),Cde(j),CdBase(j),delCdT(j),delCds(j)] = getDrag2(aeroBee,10000,v(j));  
 end
 
 figure

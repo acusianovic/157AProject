@@ -51,12 +51,12 @@ for i = 1:N
     P_a = P_a/101325*14.7; % psi
     M = abs(v/(a*3.28));
 
-    if M < 7
-        Cd = lininterp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),M);
-    else
-        Cd = min(Aerobee150ADragData(2,:));
-    end
-    %Cd = getDrag(rocket,y,v);
+%     if M < 7
+%         Cd = lininterp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),M);
+%     else
+%         Cd = min(Aerobee150ADragData(2,:));
+%     end
+    Cd = getDrag(rocket,y,v);
     % Physics
     D = 0.5*rho*v^2*S*Cd; % drag, lbf
     if v >= 0 && t(i) <= t_b

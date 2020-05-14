@@ -1,4 +1,4 @@
-function [Cd,M] = getDrag2(rocket,h,v)
+function [Cd,CdB,CdF_cor,CdP_cor,Cde,CdBase,delCdT,delCdS] = getDrag2(rocket,h,v)
 
 %% Rocket's dimensions
 d = rocket.geo.body.D; %[in]
@@ -256,7 +256,9 @@ else
 end
 
 %% Total Drag Coeff.
-Cd = CdB + Kf*CdF + Kf*CdP +Cde + CdBase + delCdT + delCdS;
+CdF_cor = CdF*Kf;
+CdP_cor = CdP*Kf;
+Cd = CdB + CdF_cor + CdP_cor + Cde + CdBase + delCdT + delCdS;
 
 %%%Overwrite instability at high Mach
 if M >= 3.5
