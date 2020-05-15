@@ -180,9 +180,6 @@ CfStarBody = 0.037036*RnBody.^(-0.155079);
 CfBody = CfStarBody*(1 + 0.00798*M - 0.1813*M.^2 + 0.0632*M.^3 ...
     - 0.00933*M.^4 + 0.000549*M.^5);
 
-% Incompressible Skin Friction Coeff. w/ roughness
-K = 0.00025;        % smooth matte paint, carefully  applied
-%K = 0.00008;        % polished metal/wood
 CfStarRBody = (1.89 + 1.62*log10(L/K))^(-2.5);
 
 % Compressible Skin Friction Coeff. w/ roughness
@@ -195,13 +192,13 @@ else
     CfFinalB = CfRBody;
 end
 
-end
 % Body Drag Coeff. due to friction
+CdB = CfFinalB*(1 + 60/(L/d)^3 + 0.0025*(L/d))*4*Sb...
+    /(pi*d^2);
+end
+
 %% Fin Friction Drag
 function CdF = finFrictionDrag(M,Cr,nu,K,xTc,tc,nf,Sf,d,lambda,a)
-
-%% Fins'Friction Drag
-
 % Compressible Reynolds Number
 RnFin = (a.*M.*Cr)./(12*nu).*(1 + 0.0283*M - 0.043*M.^2 ...
     + 0.2107*M.^3 - 0.03829*M.^4 + 0.002709*M.^5);
@@ -244,54 +241,56 @@ end
 % Drag Coeff. for all fins
 xBar = xTc/Cr;      % nondimensional location of maximum thickness   
 
-end
 % Drag Coeff. of all fins
-function [CdP] = interferenceDrag(M,Lp,nu,K,Lap,Ap,d,Sp)
 CdF = CfLambda.*(1 + 60*tc^4 + 0.8*(1 + 5*xBar^2)*tc)...
+    *4*nf*Sf/(pi*d^2);
+end
 
-%% Interference Drag
+function [CdP] = interferenceDrag(M,Lp,nu,K,Lap,Ap,d,Sp)
 
 if Lp ~= 0
+    % Compressible Reynolds Number
     RnP = (a.*M.*Lp)/(12*nu).*(1 + 0.0283*M - 0.043*M.^2 + 0.2107*M.^3 ...
         - 0.03829*M.^4 + 0.002709*M.^5);
     % Incompressible Skin Friction Coeff.
     CfStarP = 0.037036*RnP.^(-0.155079);
-    
+    % Compressible Skin Friction Coeff.
     CfP = CfStarP*(1 + 0.00798*M - 0.1813*M.^2 + 0.0632*M.^3 ...
         - 0.00933*M.^4 + 0.000549*M.^5);
     % Incompressible Skin Friction Coeff. w/ roughness
     CfStarRP = (1.89 + 1.62*log10(Lp/K))^-2.5;
     % Compressible Skin Friction Coeff. w/ roughness
     CfRP = CfStarRP/(1 + 0.2044*M.^2);
-    
     % Final Skin Friction Coeff.
     if CfP >= CfRP
         CfFinalP = CfP;
+    else
         CfFinalP = CfRP;
     end
+    % Friction Coeff. of Protuberance
+    CfFinalID = 0.815*CfFinalP.*(Lap/Lp)^-0.1243;
     % Wetted Area of Protuberance, Sp
-    % Wetted Area of Protuberance
-    Sp = 0;
-    
     % Drag Coeff. of Protuberance due to Friction
+    CdP = CfFinalID*(1 + 1.798*(sqrt(Ap)/Lp)^1.5)*4*Sp/(pi*d^2);
 else
     CdP = 0;
 end
-    Sp = 0;
-function Cde = excrescenciesDrag(M,Sr,d)
-% Sr = Sb + Sf + Sp;              % Total Wetted Area of Rocket
-Sr = Sb + Sf + Sp + Sn;              % Total Wetted Area of Rocket
 
+end
+
+function Cde = excrescenciesDrag(M,Sr,d)
 if M < 0.78
     Ke = 0.00038;
     Cde = Ke*4*Sr/(pi*d^2);
 elseif M <= 1.04
-elseif M <= 3
+    Ke = -0.4501*M^4 + 1.5954*M^3 - 2.1062*M^2 ...
         + 1.2288*M - 0.26717;
     Cde = Ke*4*Sr/(pi*d^2);
-    fb = 2.0881*(M - 1)^3 - 3.7938*(M - 1)^2 ...
+elseif M <= 3
+    Ke = 0.0002*M^2 - 0.0012*M + 0.0018;
+    Cde = Ke*4*Sr/(pi*d^2);
+else
     Ke = 0;
     Cde = 0;
-    fb = 0.297*(M - 2)^3 - 0.7937*(M -2)^2 ...
-    aCoeff = -321.94*(Ln/Le)^2 + 264.07*(Ln/Le) - 36.348;
+end
 end
