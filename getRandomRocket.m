@@ -5,10 +5,9 @@ function [rocket] = getRandomRocket(rocket)
 %% Body
 rocket.geo.body.D = 9 + rand()*(13 - 9); %in, body diameter
 % rocket.geo.body.L = 10 + rand()*(20 - 10); %ft, fuselage L, define length
-% later to be dependent on propellant volume
 
 %% Nosecone
-rocket.geo.nc.L = 7 + rand()*(4 - 2); % feet
+rocket.geo.nc.L = 2 + rand()*(4 - 2); % feet
 rocket.geo.nc.Shape = randi(3);
 rocket.geo.nc.tn = 0.12;        % Thickness, in (change later)
 
