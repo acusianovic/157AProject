@@ -27,55 +27,39 @@ function [rocket] = getWeightLength(rocket)
     D = rocket.geo.body.D; % in
     
     %% Pressurant Tank
-    t = rocket.prop.t_press; % in
-    L_cyl = rocket.prop.L_press - D; % cyldinrical section, inches
-    L_presstank = rocket.prop.L_press; % tank length, inches
-    V1 = pi/4*(D^2-(D-2*t)^2)*L_cyl; % cylindrical section metal volume, in3
-    V2 = 4*pi/3*((D/2)^3-((D-2*t)/2)^3); % spherical section metal volume, in3
-    W_presstank = (V1+V2)*rho_al/12^3; % lbm
+    L_presstank = rocket.prop.L_presstank;
+    W_presstank = rocket.prop.m_presstank; % lbm
+    %W_presstank = 0; % lbm
     W_press = rocket.prop.m_press;
     
     %% Oxygen Tank
-    t = rocket.prop.t_ox; % in
-    L_cyl = rocket.prop.L_ox - D; % in
-    V1 = pi/4*(D^2-(D-2*t)^2)*L_cyl; % cylindrical section metal volume, in3
-    V2 = 4*pi/3*((D/2)^3-((D-2*t)/2)^3); % spherical section metal volume, in3 
-    W_oxtank = (V1+V2)*rho_al/12^3; % lbm
     W_ox = rocket.prop.m_ox;
+    W_oxtank = rocket.prop.m_oxtank;
     L_oxtank = rocket.prop.L_ox; % tank length, inches
     
     %% Fuel tank
-    t = rocket.prop.t_fuel;% in
-    L_cyl = rocket.prop.L_fuel - D; % cyldinrical section, inches
-    L_fueltank = rocket.prop.L_fuel; % tank length, inches
-    V1 = pi/4*(D^2-(D-2*t)^2)*L_cyl; % cylindrical section metal volume, in3
-    V2 = 4*pi/3*((D/2)^3-((D-2*t)/2)^3); % spherical section metal volume, in3
-    W_fueltank = (V1+V2)*rho_al/12^3; % lbm
     W_fuel = rocket.prop.m_fuel;
+    W_fueltank = rocket.prop.m_fueltank;
+    L_fueltank = rocket.prop.L_fuel; % tank length, inches
     
     %% Plumbing Bay 2
     W_pbay2 = 5; % lbm
     L_pbay2 = 6; % inches
     
     %% Engine
-    rho_steel = 490.752; % steel density
-    t = 2*rocket.prop.tc;
-    OD = rocket.prop.OD;
-    A = pi/4*(OD^2-(OD-2*t)^2);
-    L_engine = rocket.prop.Lc + rocket.prop.Lfrustum + rocket.prop.Ln; % in
-    % approximate total weight assuming total length is cylinder
-    W_engine = 1.35*A*L_engine*rho_steel/12^3; % lbm
+    L_engine = rocket.prop.L_engine; % in
+    W_engine = rocket.prop.m_engine; % lbm
 
     %% Body
     L_body = L_payload+L_recovery+L_presstank+L_pbay1+L_oxtank+L_fueltank+L_pbay2+L_engine;
     V_body = (pi/4) * ((D+rocket.geo.nc.tn)^2 - D^2);
     %W_body = V_body * rho_al; % change density later
-    W_body = 70;
+    W_body = 20;
     
     %% Fins
     S = rocket.geo.fin.S;                  %fin  area, ft^2   %
     rho_CF = 111.24;                       % density of carbon fiber, lb/ft3
-    W_fin = S*rocket.geo.fin.ThR*rocket.geo.fin.c*0.5*rho_CF;  
+    W_fin = 0.1*S*rocket.geo.fin.ThR*rocket.geo.fin.c*rho_CF;  
     W_fins = W_fin*rocket.geo.fin.n; % lbm
     rocket.geo.fin.LE = L_body - rocket.geo.fin.c*12; % place fin at bottom of the rocket
 

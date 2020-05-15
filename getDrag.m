@@ -1,4 +1,4 @@
-function [Cd,CdB,CdF_cor,CdP_cor,Cde,CdBase,delCdT,delCdS] = getDrag(h,v,rocket)
+function [Cd,CdB,CdF_cor,CdP_cor,Cde,CdBase,delCdT,delCdS] = getDrag(rocket,h,v)
 
 d = rocket.geo.body.D; % rocket diameter [in]
 L = rocket.data.length.L; % total length of rocket [in]

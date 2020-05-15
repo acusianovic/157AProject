@@ -3,7 +3,7 @@ function [rocket] = getRandomRocket(rocket)
 %rand_value = min_value + rand(1)*(max_value - min_value)
 
 %% Body
-rocket.geo.body.D = 11 + rand()*(15 - 11); %in, body diameter
+rocket.geo.body.D = 9 + rand()*(13 - 9); %in, body diameter
 % rocket.geo.body.L = 10 + rand()*(20 - 10); %ft, fuselage L, define length
 % later to be dependent on propellant volume
 
@@ -90,10 +90,10 @@ rocket.geo.fin.cl_0 = 0; % Cl for 0 AOA for NACA 0010 airfoil
 %% Randomize Propultion Parameters
 % rocket.prop.m_p = 600 + rand()*(1200-600); % propellant weight, lbm
 % randomize burn time instead
-rocket.prop.PC = 250 + rand()*(600-250); % chamber pressure, psi
+rocket.prop.PC = 250 + rand()*(400-250); % chamber pressure, psi
 % rocket.prop.OD = rocket.geo.body.D*(0.7 +rand()*(0.9 - 0.7)); % determine
 % from throat area instead
-rocket.prop.Itot = 1E3*(80 + rand()*(200 - 80)); % total impulse, lbf-s
+rocket.prop.Itot = 1E3*(80 + rand()*(130 - 80)); % total impulse, lbf-s
 rocket.prop.F = 900 + rand()*(4000-900); % thrust, lbf
 
 

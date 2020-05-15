@@ -15,7 +15,6 @@ t_b = rocket.prop.t_b;  % burn time, s
 cstar = rocket.prop.cstar*3.28; % characteristic velocity, ft/s
 S = pi/4*rocket.geo.body.D^2/144; % reference area, ft2
 
-Cd = rocket.aero.Cd;
 g = 32.174;
 R_e = 3.67E6*3.28; % earth radius, ft
 
@@ -47,15 +46,18 @@ for i = 1:N
     a_arr(i)=a;
     
     %[rho,P_a,~] = getAtm(y,0); % slug/ft3, psi
-    [~, a, P_a, rho] = atmos(y/3.28);
+    [~, sos, P_a, rho] = atmos(y/3.28);
+    sos = sos*3.28;
     rho = rho/515.379; % slug/ft3
     P_a = P_a/101325*14.7; % psi
-    M = abs(v/(a*3.28));
-    if M < 7
-        Cd = lininterp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),M);
-    else
-        Cd = min(Aerobee150ADragData(2,:));
-    end
+    M = abs(v/(sos));
+
+%     if M < 7
+%         Cd = lininterp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),M);
+%     else
+%         Cd = min(Aerobee150ADragData(2,:));
+%     end
+    Cd = getDrag2(rocket,y,v,sos);
     % Physics
     D = 0.5*rho*v^2*S*Cd; % drag, lbf
     if v >= 0 && t(i) <= t_b
@@ -99,7 +101,13 @@ for i = 1:N
 end
 if 0
     figure
-    plot(t,y_arr./5280)
+    plot(t,y_arr./5280,'LineWidth',2)
+    ylabel('Height, miles')
+    xlabel('Time, s')
+    grid on
+    xlim([0 134.5])
+    set(gca, 'FontSize', 11, 'FontWeight', 'bold')
+
     %%
     figure
     plot(t,T_arr,t,D_arr)
