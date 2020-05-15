@@ -41,7 +41,7 @@ COPV = struct('strength',87000,'density',124.855921);
 
 V_chamber = rocket.prop.Lstar.*At; % in3
 A_chamber = 3.*At; % in2
-ID = sqrt(4/pi./A_chamber); % in
+ID = sqrt(4*A_chamber/pi); % in
 t_chamber = P_chamber.*ID/2/(SS310.strength/rocket.prop.FOS); % in
 OD = ID + 2.*t_chamber * 2; % in, to account for double jacket;
 theta = 30; % contraction angle degrees
