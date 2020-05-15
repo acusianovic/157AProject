@@ -7,7 +7,7 @@ g = 0; % good rockets
 b = 0; % bad rockets
 n = 0;
 vg = 0;
-numGoodRockets = 10;
+numGoodRockets = 25;
 resultRockets = struct(['Good','Bad'],{});
 % while we have less than (n) good rockets:
 fprintf('Finding good rockets... \n')
@@ -185,19 +185,19 @@ ylabel('Max Mach Number')
 
 %%
 figure
-bar(1:g,SM_wet)
+bar(1:g,SM_dry)
 
 
 %%
 figure
 bar(1:g,OTRS)
 ylabel('Off the rail speed, ft/s')
-
+ylim([min(OTRS) max(OTRS)])
 %%
 figure
 bar(1:g,apogee./5280)
 ylabel('Apogee, miles')
-
+ylim([min(apogee./5280) max(apogee./5280)])
 %%
 figure
 bar(1:g,PC)
@@ -213,16 +213,17 @@ yline(200000,'--','LineWidth',2);
 figure
 bar(1:g,L./12)
 ylabel('Rocket Length, ft')
-
+ylim([19 27])
 %%
 figure
 bar(1:g,LD)
 ylabel('Aspect Ratio')
+ylim([15 25])
 %%
 figure
 bar(1:g,D)
 ylabel('Rocket Diameter, in')
-
+ylim([10 15])
 %%
 figure
 plot(D, apogee./5280,'o','LineWidth',2)

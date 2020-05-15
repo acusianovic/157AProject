@@ -147,13 +147,17 @@ rocket.prop.m_press = m_press(Ind);
 rocket.prop.V_press = V_press(Ind);
 rocket.prop.L_presstank = L_presstank(Ind);
 rocket.prop.m_presstank = m_presstank(Ind);
-
+%%
 % figure
 % hold on
 % yyaxis left
-% plot(OF,Isp)
+% plot(OF,Isp,'LineWidth',2)
+% ylabel('Specific Impulse, s')
 % yyaxis right
-% plot(OF,mtot)
+% plot(OF,mtot,'LineWidth',2)
+% xlabel('OF Ratio')
+% ylabel('Propulsion System Mass, lbm')
+% grid on
 
 
 end

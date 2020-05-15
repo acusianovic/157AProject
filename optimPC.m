@@ -1,11 +1,10 @@
-P = 100:25:400;
+P = 100:25:600;
 h = 0:10000:70000;
 apogee = zeros(1,length(h));
 OTRS = zeros(1,length(h));
-for j = 1:length(h)
+for j = 1:length(P)
     rocket = betsyMK3;
-    %rocket.prop.PC = P(j);
-    rocket.prop.expansion_h = h(j);
+    rocket.prop.PC = P(j);
     rocket = getPropulsionDetails(rocket);
     rocket = getWeightLength(rocket);
     rocket = getCG(rocket);
@@ -24,13 +23,13 @@ end
 %%
 figure
 hold on
-plot(h,apogee/5280,'LineWidth',2)
+plot(P,apogee/5280,'LineWidth',2)
 grid on
 yline(62,'b--','LineWidth',2);
 ylabel('Apogee, miles')
 yyaxis right
-plot(h,OTRS,'LineWidth',2)
+plot(P,OTRS,'LineWidth',2)
 ylabel('Off-the-rail Speed, ft/s')
 yline(100,'r--','LineWidth',2);
-xlabel('Expansion Altitude, ft')
-xlim([0 40000])
+xlabel('Chamber Pressure psi')
+
