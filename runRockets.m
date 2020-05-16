@@ -88,6 +88,8 @@ CL = zeros(100,g);
 CD = zeros(100,g);
 D1 = zeros(100,g);
 LD = zeros(g,1);
+SM_wet = zeros(g,1);
+SM_dry = zeros(g,1);
 
 % extract data for n planes
 for n = 1:g
@@ -102,6 +104,8 @@ for n = 1:g
    L(n) =  resultRockets(n).Good.data.length.L;
    D(n) = resultRockets(n).Good.geo.body.D;
    LD(n) = resultRockets(n).Good.geo.LD;
+   SM_wet(n) = resultRockets(n).Good.aero.SM_wet;
+   SM_dry(n) = resultRockets(n).Good.aero.SM_dry;
    
    Thrust(n) = resultRockets(n).Good.prop.F;
    t_b(n) = resultRockets(n).Good.prop.t_b;
@@ -131,6 +135,7 @@ OTRS = OTRS(wI);
 M = M(wI);
 L = L(wI);
 D = D(wI);
+LD = LD(wI);
 m_p = m_p(wI);
 m_w = m_w(wI);
 m_propulsion = m_propulsion(wI);
@@ -138,8 +143,11 @@ m_d = m_d(wI);
 Thrust = Thrust(wI);
 t_b = t_b(wI);
 Isp = Isp(wI);
+Itot = Itot(wI);
 OF = OF(wI);
 PC = PC(wI);
+SM_dry = SM_dry(wI);
+SM_wet = SM_wet(wI);
     
 
 fin_S = fin_S(wI);
@@ -178,14 +186,19 @@ ylabel('Max Mach Number')
 
 %%
 figure
+bar(1:g,SM_dry)
+
+
+%%
+figure
 bar(1:g,OTRS)
 ylabel('Off the rail speed, ft/s')
-
+ylim([min(OTRS) max(OTRS)])
 %%
 figure
 bar(1:g,apogee./5280)
 ylabel('Apogee, miles')
-
+ylim([min(apogee./5280) max(apogee./5280)])
 %%
 figure
 bar(1:g,PC)
@@ -201,16 +214,17 @@ yline(200000,'--','LineWidth',2);
 figure
 bar(1:g,L./12)
 ylabel('Rocket Length, ft')
-
+ylim([19 27])
 %%
 figure
 bar(1:g,LD)
 ylabel('Aspect Ratio')
+ylim([15 25])
 %%
 figure
 bar(1:g,D)
 ylabel('Rocket Diameter, in')
-
+ylim([10 15])
 %%
 figure
 plot(D, apogee./5280,'o','LineWidth',2)
@@ -235,7 +249,7 @@ set(gca, 'FontSize', 11, 'FontWeight', 'bold')
 
 %% Higher PC -> less propellant needed
 figure
-plot(PC, m_p./Itot,'o','LineWidth',2)
+plot(PC, m_p,'o','LineWidth',2)
 xlabel('Chamber Pressure, psi'); ylabel('Propellant Mass/Total Impulse, 1/s')
 grid on
 
@@ -267,6 +281,7 @@ xlabel('Aspect Ratio')
 ylabel('Wet Mass lbm')
 zlabel('Apogee miles')
 %xlim([19 25])
+
 
 %%
 figure

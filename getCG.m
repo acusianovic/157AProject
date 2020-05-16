@@ -7,7 +7,7 @@ x_nose = 0.424*L_nose;  % Assume to be elliptical
 
 %% Body
 % D = rocket.geo.body.D;
-L_body = rocket.geo.body.L;
+L_body = rocket.data.length.body;
 x_body = L_nose + (L_body/2);   % from nose
 
 

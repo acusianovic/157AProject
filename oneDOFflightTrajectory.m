@@ -47,7 +47,8 @@ for i = 1:N
     a_arr(i)=a;
     
     %[rho,P_a,~] = getAtm(y,0); % slug/ft3, psi
-    [~, a, P_a, rho] = atmos(y/3.28);
+    [~, sos, P_a, rho] = atmos(y/3.28);
+    sos = sos*3.28;
     rho = rho/515.379; % slug/ft3
     P_a = P_a/101325*14.7; % psi
     M = abs(v/(a*3.28));
@@ -100,7 +101,13 @@ for i = 1:N
 end
 if 0
     figure
-    plot(t,y_arr./5280)
+    plot(t,y_arr./5280,'LineWidth',2)
+    ylabel('Height, miles')
+    xlabel('Time, s')
+    grid on
+    xlim([0 134.5])
+    set(gca, 'FontSize', 11, 'FontWeight', 'bold')
+
     %%
     figure
     plot(t,T_arr,t,D_arr)
