@@ -1,4 +1,4 @@
-function [Cd,CdB,CdF_cor,CdP_cor,Cde,CdBase,delCdT,delCdS] = getDrag2(rocket,h,v,a)
+function [Cd] = getDrag2(rocket,h,v,a)
 
 %% Rocket's dimensions
 d = rocket.geo.body.D; %[in]

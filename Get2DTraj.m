@@ -99,11 +99,11 @@ while vy(step) >= 0 && step <= MaxIterations
     if vy(step) == 0 %no liftoff
         Af = 0;
         sign = 0;
-        [Cd(step),M(step)] = getDrag2( rocket );
+        [Cd(step)] = getDrag2( rocket,h(step),v(step),SOS );
     elseif vy(step) > 0 %before apogee
         Af = (pi/4)*RocketDiam^2; %[ft^2]
         sign = -vy(step)/abs(vy(step));
-        [Cd(step),M(step)] = getDrag2( rocket );
+        [Cd(step)] = getDrag2( rocket,h(step),v(step),SOS );
     elseif vy(step) < 0 && h(step) > RecoveryAltitude && ChuteDeployed == 0 %after apogee, before main chute deployment
         if DrogueDeployed == 0
             DrogueDeployed = 1;
