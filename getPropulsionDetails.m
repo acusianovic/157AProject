@@ -40,7 +40,7 @@ COPV = struct('strength',87000,'density',124.855921);
 %% Chamber sizing
 
 V_chamber = rocket.prop.Lstar.*At; % in3
-A_chamber = 3.*At; % in2
+A_chamber = 5.*At; % in2
 ID = sqrt(4*A_chamber/pi); % in
 t_chamber = P_chamber.*ID/2/(SS310.strength/rocket.prop.FOS); % in
 OD = ID + 2.*t_chamber * 2; % in, to account for double jacket;
@@ -57,7 +57,7 @@ c1=gam(j)+1;c2=gam(j)-1;
 Me = sqrt(2./c2.*((P_chamber./P_exit).^(c2./gam)-1));
 Ae = At./Me.*((1+c2./2.*Me.^2)./(c1./2)).^(c1./(2.*c2));
 De = sqrt(4.*Ae./pi);
-exp = Ae./At;
+eps = Ae./At;
 % assume conicalnozzle, can refine later to be bell nozzle to minimize
 % divergence losses
 alpha = 15; % divergent half angle, degrees
@@ -131,7 +131,7 @@ rocket.prop.Me = Me(Ind);
 rocket.prop.Ae = Ae(Ind);
 rocket.prop.Ln = Ln(Ind);
 rocket.prop.De = De(Ind);
-rocket.prop.exp = exp(Ind);
+rocket.prop.eps = eps(Ind);
 
 rocket.prop.m_ox = m_ox(Ind);
 rocket.prop.V_ox = V_ox(Ind);

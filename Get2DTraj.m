@@ -162,7 +162,8 @@ end
 rocket.data.performance.OTRS = OTRS; %[ft/s]
 rocket.data.performance.apogee = h(step); %[ft]
 rocket.data.performance.range = x(step); %[ft]
-rocket.data.performance.vMax = max(v);%[ft/s]
+[~,Ind] = max(v);
+rocket.data.performance.vMax = v(Ind);%[ft/s]
 rocket.aero.CD = Cd;
 
 end
