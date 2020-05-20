@@ -1,3 +1,4 @@
+%% 
 function [rocket] = getRandomRocket(rocket)
 %randomization format
 %rand_value = min_value + rand(1)*(max_value - min_value)
