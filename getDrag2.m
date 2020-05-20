@@ -1,4 +1,4 @@
-function [Cd] = getDrag2(rocket,h,v,a)
+function Cd = getDrag2(rocket,h,v,a)
 
 %% Rocket's dimensions
 d = rocket.geo.body.D; %[in]

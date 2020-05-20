@@ -52,7 +52,7 @@ function [rocket] = getWeightLength(rocket)
 
     %% Body
     L_body = L_payload+L_recovery+L_presstank+L_pbay1+L_oxtank+L_fueltank+L_pbay2+L_engine;
-    V_body = (pi/4) * ((D+rocket.geo.nc.tn)^2 - D^2);
+    V_body = (pi/4) * ((D+rocket.geo.nc.tn)^2 - D^2)*L_body;
     %W_body = V_body * rho_al; % change density later
     W_body = 20;
     

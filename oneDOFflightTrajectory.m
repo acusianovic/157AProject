@@ -52,7 +52,7 @@ for i = 1:N
     rho = rho/515.379; % slug/ft3
     P_a = P_a/101325*14.7; % psi
     M = abs(v/(a*3.28));
-    [Cd(i),~] = getDrag2(rocket,y_arr(i),abs(v_arr(i)));
+    Cd(i) = getDrag2(rocket,y,v,sos);
 %     if M < 7
 %         %Cd = lininterp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),M);
 %     else

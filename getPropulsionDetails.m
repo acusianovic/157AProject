@@ -2,7 +2,7 @@ function [rocket] = getPropulsionDetails(rocket)
 
 %% Find optimal OF at given chamber pressure and expansion altitude
 
-[~,P_exit,~] = getAtm(rocket.prop.expansion_h,0); % exit pressure in psi
+[~,P_exit,~] = atmos(rocket.prop.expansion_h/3.28); % exit pressure in psi
 rocket.prop.P_e = P_exit;
 P_chamber = rocket.prop.PC;
 load('LOXCH4comb.mat','combustion');
