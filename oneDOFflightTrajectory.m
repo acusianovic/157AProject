@@ -52,7 +52,7 @@ for i = 1:N
     rho = rho/515.379; % slug/ft3
     P_a = P_a/101325*14.7; % psi
     M = abs(v/(a*3.28));
-    [Cd(i),~] = getDrag2(rocket,y_arr(i),abs(v_arr(i)));
+    Cd(i) = getDrag2(rocket,y_arr(i),abs(v_arr(i)),sos);
 %     if M < 7
 %         %Cd = lininterp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),M);
 %     else
@@ -70,6 +70,7 @@ for i = 1:N
         if y <= launch_tower_height
             OTRS = v;
         end
+        apind = i;
         
         
     elseif v >= 0
@@ -77,6 +78,7 @@ for i = 1:N
         T = 0; dm = 0;
         a = (T-D-(m/g)*g_gr)/(m/g);
         dv = a*dt;
+
 
     elseif v < 0
     %% Descent period
@@ -93,7 +95,9 @@ for i = 1:N
     y = y + v*cosd(0)*dt;
     x = x + v*sind(0)*dt;
 
-    t_land = t;
+    t_land = t(i);
+
+    
     % If rocket hits the ground, stop the simulation
     if y < -0.1
         break;
@@ -128,6 +132,7 @@ end
 %% Performance
 [apogee, ind] = max(y_arr);
 
+rocket.prop.F_mean = mean(T_arr(1:apind));
 rocket.data.performance.OTRS = OTRS;
 rocket.data.performance.apogee = apogee;
 rocket.data.performance.Mmax = max(M_arr); % mach number
