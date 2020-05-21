@@ -13,7 +13,7 @@ D_o = D_i + t; %in
 R_i = D_i/2; %in
 R_o = D_o/2; %in
 
-L = rocket.geo.length; %in
+L = rocket.geo.body.L; %in
 I_frame = (pi/4)*(R_o^4 - R_i^4); %in^4
 A_frame = pi*(D_o^2 - D_i^2); %in^2
 n = 4; %fixed ends

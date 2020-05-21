@@ -111,7 +111,7 @@ if 0
     ylabel('Height, miles')
     xlabel('Time, s')
     grid on
-    xlim([0 134.5])
+    xlim([0 260.5])
     set(gca, 'FontSize', 11, 'FontWeight', 'bold')
 
     %%
