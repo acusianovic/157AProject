@@ -1,4 +1,4 @@
-function [Cd] = getDrag2(rocket,h,v,a)
+function [Cd] = getDrag2(rocket,v,a,nu)
 
 %% Rocket's dimensions
 d = rocket.geo.body.D; %[in]
@@ -43,15 +43,15 @@ M = abs(v/a);
 
 %% Kinematic Viscosity ft^2/s
 
-if h < 15000
-    nu = 0.000157*exp(2.503e-5*h);
-elseif h <= 30000
-    nu = 0.000157*exp(2.76e-5*h - 0.03417);
-elseif h <= 248160
-    nu = 0.000157*exp(4.664e-5*h - 0.6882);
-else
-    nu = 5;
-end
+% if h < 15000
+%     nu = 0.000157*exp(2.503e-5*h);
+% elseif h <= 30000
+%     nu = 0.000157*exp(2.76e-5*h - 0.03417);
+% elseif h <= 248160
+%     nu = 0.000157*exp(4.664e-5*h - 0.6882);
+% else
+%     nu = 5;
+% end
 
 
 %% Body's Friction Drag 

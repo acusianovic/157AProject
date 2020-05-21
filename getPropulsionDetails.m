@@ -1,8 +1,12 @@
-function [rocket] = getPropulsionDetails(rocket)
+function [rocket] = getPropulsionDetails(rocket,atmo_dat)
 
 %% Find optimal OF at given chamber pressure and expansion altitude
 
-[~,P_exit,~] = getAtm(rocket.prop.expansion_h,0); % exit pressure in psi
+P_exit = lininterp1(atmo_dat.Z,atmo_dat.P,rocket.prop.expansion_h); % psi
+%[~, ~, P_exit, ~] = atmos(rocket.prop.expansion_h/3.28);
+%P_exit = P_exit/101325*14.7; % psi
+%[~,P_exit,~] = getAtm(rocket.prop.expansion_h,0); % exit pressure in psi
+
 rocket.prop.P_e = P_exit;
 P_chamber = rocket.prop.PC;
 load('LOXCH4comb.mat','combustion');
@@ -21,11 +25,11 @@ for j = 1:length(OF)
     c1 = gam(j)+1;c2 = gam(j)-1;
     c3 = c1./c2;
     ct(j) = sqrt(2*gam(j)^2/c2*(2/c1)^c3*(1-(P_exit/P_chamber)^(c2/gam(j))));
-    Isp(j) = cstar(j)*ct(j)/9.81;
+    Isp(j) = cstar(j)*ct(j)/9.81*rocket.prop.cstar_eff*rocket.prop.ct_eff;
 end
 
 cstar = cstar*rocket.prop.cstar_eff; % m/s
-ct = ct*rocket.prop.cstar_eff; % dim.
+ct = ct*rocket.prop.ct_eff; % dim.
 
 rocket.prop.t_b = rocket.prop.Itot/rocket.prop.F; % s
 m_p = rocket.prop.Itot./Isp; % lbm
