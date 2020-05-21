@@ -15,6 +15,7 @@ t_b = rocket.prop.t_b;  % burn time, s
 cstar = rocket.prop.cstar*3.28; % characteristic velocity, ft/s
 S = pi/4*rocket.geo.body.D^2/144; % reference area, ft2
 
+% Cd = rocket.aero.Cd;
 g = 32.174;
 R_e = 3.67E6*3.28; % earth radius, ft
 
@@ -50,16 +51,15 @@ for i = 1:N
     sos = sos*3.28;
     rho = rho/515.379; % slug/ft3
     P_a = P_a/101325*14.7; % psi
-    M = abs(v/(sos));
-
+    M = abs(v/(a*3.28));
+    Cd(i) = getDrag2(rocket,y_arr(i),abs(v_arr(i)),sos);
 %     if M < 7
-%         Cd = lininterp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),M);
+%         %Cd = lininterp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),M);
 %     else
-%         Cd = min(Aerobee150ADragData(2,:));
+%         %Cd = min(Aerobee150ADragData(2,:));
 %     end
-    Cd = getDrag2(rocket,y,v,sos);
     % Physics
-    D = 0.5*rho*v^2*S*Cd; % drag, lbf
+    D = 0.5*rho*v^2*S*Cd(i); % drag, lbf
     if v >= 0 && t(i) <= t_b
     %% Thrust period
         dm = mdot*dt;
@@ -70,6 +70,7 @@ for i = 1:N
         if y <= launch_tower_height
             OTRS = v;
         end
+        apind = i;
         
         
     elseif v >= 0
@@ -77,6 +78,7 @@ for i = 1:N
         T = 0; dm = 0;
         a = (T-D-(m/g)*g_gr)/(m/g);
         dv = a*dt;
+
 
     elseif v < 0
     %% Descent period
@@ -93,7 +95,9 @@ for i = 1:N
     y = y + v*cosd(0)*dt;
     x = x + v*sind(0)*dt;
 
-    t_land = t;
+    t_land = t(i);
+
+    
     % If rocket hits the ground, stop the simulation
     if y < -0.1
         break;
@@ -128,10 +132,14 @@ end
 %% Performance
 [apogee, ind] = max(y_arr);
 
+rocket.prop.F_mean = mean(T_arr(1:apind));
 rocket.data.performance.OTRS = OTRS;
 rocket.data.performance.apogee = apogee;
 rocket.data.performance.Mmax = max(M_arr); % mach number
 rocket.data.performance.Vmax = max(v_arr); % ft/s
 rocket.data.performance.maxg = max(a_arr)/g; 
+% rocket.data.performance.height = y_arr;
+% rocket.data.aero.Cd = Cd;
+% rocket.data.aero.Mach = Ma;
 
 end

@@ -8,7 +8,7 @@ rocket.geo.body.D = 9 + rand()*(13 - 9); %in, body diameter
 % rocket.geo.body.L = 10 + rand()*(20 - 10); %ft, fuselage L, define length
 
 %% Nosecone
-rocket.geo.nc.L = 2 + rand()*(4 - 2); % feet
+rocket.geo.nc.L = 6 + rand()*(4 - 2); % feet
 rocket.geo.nc.Shape = randi(3);
 rocket.geo.nc.tn = 0.12;        % Thickness, in (change later)
 
@@ -69,18 +69,17 @@ end
 rocket.geo.nc.S = 2*pi*trapz(x,y.*sqrt(1 + dy.^2));
 rocket.geo.nc.V = VOuter - VInner; % Volume in ft^3;
 
-%% fin, NACA 0010 Airfoil
+%% fin, similiar shape to the Aerobee
 rocket.geo.fin.n = 4; % number of fins (all values below for 1 fin)
-rocket.geo.fin.TR = 0.5; % taper ratio
-rocket.geo.fin.S = 0.2 + rand()*(5 - 0.2); % ft^2, fin area
+rocket.geo.fin.TR = 0.5 + rand()*(1 - 0.5); % taper ratio
+rocket.geo.fin.S = 2 + rand()*(5 - 2); % ft^2, fin area
 rocket.geo.fin.AR = 0.1 + rand()*(1 - 0.1); %fin aspect ratio
 rocket.geo.fin.b = (rocket.geo.fin.S * rocket.geo.fin.AR )^0.5; %ft, fin span length
 rocket.geo.fin.c = 2*rocket.geo.fin.S/rocket.geo.fin.b/(1+rocket.geo.fin.TR); % ft, fin chord length
-rocket.geo.fin.ThR = 0.1; % thickness ratio
+rocket.geo.fin.ThR = 1.1/(12*rocket.geo.fin.c); % thickness ratio
 rocket.geo.fin.sweep = 20 + rand()*(45-20); %degrees, sweep angle
 rocket.geo.fin.S_wet = rocket.geo.fin.S*(1.977 + 0.52*rocket.geo.fin.ThR); %ft^2, wetted area formula from http://www.ipublishing.co.in/jarvol1no12010/EIJAER2011.pdf
 rocket.geo.fin.h_t = 0.3; %nondimensional distance to maximum thickness
-
 
 rocket.geo.fin.h_ac = 0.25; %nondimensional, distance from fin leading edge to AC
 rocket.geo.fin.ac = rocket.geo.fin.h_ac*rocket.geo.fin.c; %ft, distance from fin leading edge to AC, set to quarter chord

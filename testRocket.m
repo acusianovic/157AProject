@@ -2,6 +2,11 @@ P = 100:25:400;
 h = 0:10000:70000;
 apogee = zeros(1,length(h));
 OTRS = zeros(1,length(h));
+Isp = zeros(1,length(h));
+eps = zeros(1,length(h));
+F_mean = zeros(1,length(h));
+mdot = zeros(1,length(h));
+
 for j = 1:length(h)
     rocket = betsyMK3;
     %rocket.prop.PC = P(j);
@@ -14,6 +19,11 @@ for j = 1:length(h)
     rocket = stability(rocket);
     apogee(j) = rocket.data.performance.apogee;
     OTRS(j) = rocket.data.performance.OTRS;
+    Isp(j) = rocket.prop.Isp;
+    eps(j) = rocket.prop.eps;
+    F_mean(j) = rocket.prop.F_mean;
+    mdot(j) = rocket.prop.mdot;
+
 %     fprintf('\nApogee: %g miles\n',rocket.data.performance.apogee/5280)
 %     fprintf('OTRS: %g ft/s\n',rocket.data.performance.OTRS)
 %     fprintf('Static Stability Margin (wet): %g\n',rocket.aero.SM_wet)
@@ -34,3 +44,18 @@ ylabel('Off-the-rail Speed, ft/s')
 yline(100,'r--','LineWidth',2);
 xlabel('Expansion Altitude, ft')
 xlim([0 40000])
+%%
+figure
+plot(h,Isp,'LineWidth',2)
+ylabel('Isp')
+yyaxis right
+plot(h,eps,'LineWidth',2)
+ylabel('eps')
+%%
+figure
+plot(h,mdot,'LineWidth',2)
+ylabel('mdot')
+yyaxis right
+plot(h,F_mean,'LineWidth',2)
+ylabel('F')
+

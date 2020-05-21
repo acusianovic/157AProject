@@ -7,12 +7,12 @@ g = 0; % good rockets
 b = 0; % bad rockets
 n = 0;
 vg = 0;
-numGoodRockets = 25;
+numGoodRockets = 5;
 resultRockets = struct(['Good','Bad'],{});
 % while we have less than (n) good rockets:
 fprintf('Finding good rockets... \n')
 
-boolArray = zeros(1,4);
+boolArray = zeros(1,5);
 while  g < numGoodRockets
     fprintf('.')
     if mod(n,100) == 0
@@ -25,6 +25,7 @@ while  g < numGoodRockets
     newRocket = getWeightLength(newRocket); % estimate rocket weight and length
     newRocket = getCP(newRocket); % get center of pressure versus angle of attack
     newRocket = getCG(newRocket); % get CG for dry mass and wet mass
+    newRocket = checkFlutter(newRocket);% Check for fin flutter
     %newRocket = getInertias(newRocket); % get center of pressure versus mach number and propellant weight
 
     newRocket = oneDOFflightTrajectory(newRocket); % get trajectory, apogee, and OTRS
@@ -54,7 +55,7 @@ fprintf('%d bad rockets discarded \n',b)
 badfails = n - boolArray;
 figure
 bar(badfails)
-set(gca,'xticklabel',{'apogeeBad', 'otrsBad', 'arBad','stabilityBad'})
+set(gca,'xticklabel',{'apogeeBad', 'otrsBad', 'arBad','stabilityBad','flutter'})
 
 %% initialize data variables
 W = zeros(g,1);
