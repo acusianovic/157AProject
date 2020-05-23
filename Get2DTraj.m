@@ -18,6 +18,7 @@ cstar = rocket.prop.cstar*3.28; % characteristic velocity, ft/s
 mdot = rocket.prop.mdot/32.2; %[slugs/s] 
 LaunchAngle = 4*pi/180; %[rad]
 AOA = LaunchAngle; %angle of attack[rad]
+rocket.data.stability.alphas = AOA; 
 Ft = 0;
 
 %%% Define and convert rocket masses %%%
