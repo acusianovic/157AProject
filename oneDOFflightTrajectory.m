@@ -1,4 +1,4 @@
-function [rocket] = oneDOFflightTrajectory(rocket)
+function [rocket] = oneDOFflightTrajectory(rocket,atmo_dat)
 % Simulate rocket in 1D to get apogee, OTRS
 
 % simulation parameters
