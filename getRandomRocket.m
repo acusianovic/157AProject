@@ -1,4 +1,3 @@
-%% 
 function [rocket] = getRandomRocket(rocket)
 %randomization format
 %rand_value = min_value + rand(1)*(max_value - min_value)
@@ -79,7 +78,9 @@ rocket.geo.fin.c = 2*rocket.geo.fin.S/rocket.geo.fin.b/(1+rocket.geo.fin.TR); % 
 rocket.geo.fin.ThR = 1.1/(12*rocket.geo.fin.c); % thickness ratio
 rocket.geo.fin.S_wet = rocket.geo.fin.S*(1.977 + 0.52*rocket.geo.fin.ThR); %ft^2, wetted area formula from http://www.ipublishing.co.in/jarvol1no12010/EIJAER2011.pdf
 rocket.geo.fin.sweep = 20 + rand()*(45-20); %degrees, sweep angle
+rocket.geo.fin.S_wet = rocket.geo.fin.S*(1.977 + 0.52*rocket.geo.fin.ThR); %ft^2, wetted area formula from http://www.ipublishing.co.in/jarvol1no12010/EIJAER2011.pdf
 rocket.geo.fin.h_t = 0.3; %nondimensional distance to maximum thickness
+
 
 rocket.geo.fin.h_ac = 0.25; %nondimensional, distance from fin leading edge to AC
 rocket.geo.fin.ac = rocket.geo.fin.h_ac*rocket.geo.fin.c; %ft, distance from fin leading edge to AC, set to quarter chord
