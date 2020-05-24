@@ -18,7 +18,7 @@ if isempty(pindex)
     pindex = index;
     slope = 0;
 elseif isempty(index)
-    %warning('interpolating after end');
+    warning('interpolating after end');
     index = pindex;
     slope = 0;
 elseif pindex == index
