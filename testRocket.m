@@ -1,24 +1,21 @@
 P = 100:25:400;
 h = 0:10000:70000;
-d = 10:0.5:14;
 apogee = zeros(1,length(h));
 OTRS = zeros(1,length(h));
 Isp = zeros(1,length(h));
 eps = zeros(1,length(h));
 F_mean = zeros(1,length(h));
-F_opt = zeros(1,length(h));
 mdot = zeros(1,length(h));
-load('atmo_dat.mat','atmo_dat');
+
 for j = 1:length(h)
-    rocket = betsyMK4;
-    
+    rocket = betsyMK3;
     %rocket.prop.PC = P(j);
     rocket.prop.expansion_h = h(j);
-    rocket = getPropulsionDetails(rocket,atmo_dat);
+    rocket = getPropulsionDetails(rocket);
     rocket = getWeightLength(rocket);
     rocket = getCG(rocket);
     rocket = getCP(rocket);
-    rocket = oneDOFflightTrajectory(rocket,atmo_dat);
+    rocket = oneDOFflightTrajectory(rocket);
     rocket = stability(rocket);
     apogee(j) = rocket.data.performance.apogee;
     OTRS(j) = rocket.data.performance.OTRS;
@@ -26,7 +23,6 @@ for j = 1:length(h)
     eps(j) = rocket.prop.eps;
     F_mean(j) = rocket.prop.F_mean;
     mdot(j) = rocket.prop.mdot;
-    F_opt(j) = rocket.prop.F_opt;
 
 %     fprintf('\nApogee: %g miles\n',rocket.data.performance.apogee/5280)
 %     fprintf('OTRS: %g ft/s\n',rocket.data.performance.OTRS)
@@ -62,6 +58,4 @@ ylabel('mdot')
 yyaxis right
 plot(h,F_mean,'LineWidth',2)
 ylabel('F')
-%%
-figure
-plot(h,F_opt)
+

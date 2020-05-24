@@ -59,7 +59,6 @@ for i = 1:N
 %     else
 %         %Cd = min(Aerobee150ADragData(2,:));
 %     end
-
     % Physics
     D = 0.5*rho*v^2*S*Cd(i); % drag, lbf
     if v >= 0 && t(i) <= t_b
@@ -80,7 +79,6 @@ for i = 1:N
         T = 0; dm = 0;
         a = (T-D-(m/g)*g_gr)/(m/g);
         dv = a*dt;
-
 
     elseif v < 0
     %% Descent period

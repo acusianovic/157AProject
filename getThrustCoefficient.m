@@ -3,7 +3,7 @@ function cf = getThrustCoefficient(rocket, P_a)
     gam = rocket.prop.gam; % specific heat ratio
     PC = rocket.prop.PC; % chamber pressure
     P_e = rocket.prop.P_e; % exit pressure
-    eps = rocket.prop.eps; % expansion ratio
+    eps = rocket.prop.exp; % expansion ratio
     
     c1 = gam+1;c2 = gam - 1;
     c3 = c1/c2;
