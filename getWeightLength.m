@@ -1,5 +1,62 @@
 function [rocket] = getWeightLength(rocket)
    %% Nosecone
+       % Calculate Volume
+    dx = 0.01;
+    x = 0:dx:rocket.geo.nc.L;
+    R = rocket.geo.body.D/(12*2);
+
+    if rocket.geo.nc.Shape == 1         % Von Karman
+        theta = acos( 1 - (2*x)/rocket.geo.nc.L);
+        y = (R/sqrt(pi)) * sqrt(theta - sin(2.*theta)/2);
+        yInner = y - rocket.geo.nc.tn/12;      % in ft
+      % Zero out yInner
+        for ii = 1:length(y)
+            if yInner(ii) < 0
+                yInner(ii) = 0;
+            end
+        end
+      % Rotating curves around x axis
+        VOuter = pi*trapz(x,y);
+        VInner = pi*trapz(x,yInner);
+
+    elseif rocket.geo.nc.Shape == 2     % 1/2 Power
+        y = R * (x/rocket.geo.nc.L).^(1/2);
+        yInner = y - rocket.geo.nc.tn/12;      % in ft
+      % Zero out yInner
+        for ii = 1:length(y)
+            if yInner(ii) < 0
+                yInner(ii) = 0;
+            end
+        end
+      % Rotating curves around x axis
+        VOuter = pi*trapz(x,y);
+        VInner = pi*trapz(x,yInner);
+
+    elseif rocket.geo.nc.Shape == 3     % Elliptical
+        y = R * sqrt(1-(x/rocket.geo.nc.L).^2);
+        yInner = y - rocket.geo.nc.tn/12;      % in ft
+      % Zero out yInner
+        for ii = 1:length(y)
+            if yInner(ii) < 0
+                yInner(ii) = 0;
+            end
+        end
+      % Rotating curves around x axis
+        VOuter = pi*trapz(x,y);
+        VInner = pi*trapz(x,yInner);
+    end
+
+    % Derivative of yN
+    dy = zeros(1,length(y));
+    dy(1) = (y(2) - y(1))/dx;
+    dy(length(y)) = (y(length(y)) - y(length(y)-1))/dx;
+    for ii = 2:length(y)-1
+        dy(ii) = ( y(ii+1) - y(ii) )/ dx;
+    end
+    % Surface Area of Nose Cone(ft^2)
+    rocket.geo.nc.S = 2*pi*trapz(x,y.*sqrt(1 + dy.^2));
+    rocket.geo.nc.V = VOuter - VInner; % Volume in ft^3;
+   
     L_nosecone = rocket.geo.nc.L*12; % inches
     rho_nosecone = 100;        % Fiberglass (lb/ft^3), change later
     W_nosecone = rho_nosecone*rocket.geo.nc.V; % ft3
@@ -10,13 +67,13 @@ function [rocket] = getWeightLength(rocket)
     
 
     %% Recovery
-    L_recovery = 7; % estimate, recovery bay length, inches
+    L_recovery = 10; % estimate, recovery bay length, inches
     W_recovery = 6; % estimate
     
     %% Propulsion System Weight 
     %% Plumbing Bay 1
     W_pbay1 = 9; % lbm
-    L_pbay1 = 6; % inches
+    L_pbay1 = 9; % inches
     
     %% Propellant Tanks
     rho_al = 168.555; % aluminum 6061-T6 density, lbm/ft3
@@ -40,7 +97,7 @@ function [rocket] = getWeightLength(rocket)
     
     %% Plumbing Bay 2
     W_pbay2 = 3; % lbm
-    L_pbay2 = 6; % inches
+    L_pbay2 = 9; % inches
     
     %% Engine
     L_engine = rocket.prop.L_engine; % in
@@ -58,7 +115,7 @@ function [rocket] = getWeightLength(rocket)
     %% Fins
     S = rocket.geo.fin.S;                  %fin  area, ft^2   %
     rho_CF = 111.24;                       % density of carbon fiber, lb/ft3
-    W_fin = 0.2*S*rocket.geo.fin.ThR*rocket.geo.fin.c*rho_CF;  
+    W_fin = 0.6*S*rocket.geo.fin.ThR*rocket.geo.fin.c*rho_CF;  
     W_fins = W_fin*rocket.geo.fin.n; % lbm
     rocket.geo.fin.LE = L_body - rocket.geo.fin.c*12; % place fin at bottom of the rocket
 

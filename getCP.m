@@ -1,5 +1,5 @@
 function rocket = getCP(rocket)
-AoA = 0:0.25:30;                 % / deg
+AoA = 0:0.25:30;                 %  deg
 
 % Need to include AoA
 d = rocket.geo.body.D/12;          % Rocket diameter, ft

@@ -9,64 +9,8 @@ rocket.geo.body.D = 10 + rand()*(17 - 10); %in, body diameter
 %% Nosecone
 rocket.geo.nc.L = 6 + rand()*(4 - 2); % feet
 rocket.geo.nc.Shape = randi(3);
-rocket.geo.nc.tn = 0.12*2;        % Thickness, in (change later)
+rocket.geo.nc.tn = 0.12;        % Thickness, in (change later)
 
-% Calculate Volume
-dx = 0.01;
-x = 0:dx:rocket.geo.nc.L;
-R = rocket.geo.body.D/(12*2);
-
-if rocket.geo.nc.Shape == 1         % Von Karman
-    theta = acos( 1 - (2*x)/rocket.geo.nc.L);
-    y = (R/sqrt(pi)) * sqrt(theta - sin(2.*theta)/2);
-    yInner = y - rocket.geo.nc.tn/12;      % in ft
-  % Zero out yInner
-    for ii = 1:length(y)
-        if yInner(ii) < 0
-            yInner(ii) = 0;
-        end
-    end
-  % Rotating curves around x axis
-    VOuter = pi*trapz(x,y);
-    VInner = pi*trapz(x,yInner);
-    
-elseif rocket.geo.nc.Shape == 2     % 1/2 Power
-    y = R * (x/rocket.geo.nc.L).^(1/2);
-    yInner = y - rocket.geo.nc.tn/12;      % in ft
-  % Zero out yInner
-    for ii = 1:length(y)
-        if yInner(ii) < 0
-            yInner(ii) = 0;
-        end
-    end
-  % Rotating curves around x axis
-    VOuter = pi*trapz(x,y);
-    VInner = pi*trapz(x,yInner);
-    
-elseif rocket.geo.nc.Shape == 3     % Elliptical
-    y = R * sqrt(1-(x/rocket.geo.nc.L).^2);
-    yInner = y - rocket.geo.nc.tn/12;      % in ft
-  % Zero out yInner
-    for ii = 1:length(y)
-        if yInner(ii) < 0
-            yInner(ii) = 0;
-        end
-    end
-  % Rotating curves around x axis
-    VOuter = pi*trapz(x,y);
-    VInner = pi*trapz(x,yInner);
-end
-
-% Derivative of yN
-dy = zeros(1,length(y));
-dy(1) = (y(2) - y(1))/dx;
-dy(length(y)) = (y(length(y)) - y(length(y)-1))/dx;
-for ii = 2:length(y)-1
-    dy(ii) = ( y(ii+1) - y(ii) )/ dx;
-end
-% Surface Area of Nose Cone(ft^2)
-rocket.geo.nc.S = 2*pi*trapz(x,y.*sqrt(1 + dy.^2));
-rocket.geo.nc.V = VOuter - VInner; % Volume in ft^3;
 
 %% fin, similiar shape to the Aerobee
 rocket.geo.fin.n = 4; % number of fins (all values below for 1 fin)

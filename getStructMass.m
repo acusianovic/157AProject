@@ -8,10 +8,11 @@ G_frame = 603.4e3; %psi
 %strength_shear =  %psi
 
 D_i = rocket.geo.body.D; %in
-t = 0.075; %in
+t = 0.1; %in
 D_o = D_i + t; %in
 R_i = D_i/2; %in
 R_o = D_o/2; %in
+
 
 L = rocket.geo.body.L; %in
 I_frame = (pi/4)*(R_o^4 - R_i^4); %in^4
