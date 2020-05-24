@@ -28,9 +28,10 @@ D_arr = zeros(N,1);
 M_arr = zeros(N,1);
 rho_arr = zeros(N,1);
 a_arr = zeros(N,1);
+q_arr = zeros(N,1);
 
 % Initial conditions
-v=0;y=0;x=0;dv=0;T=0;D=0;M=0;a=0;
+v=0;y=0;x=0;dv=0;T=0;D=0;M=0;a=0;q=0;
 
 % Begin simulation
 for i = 1:N
@@ -45,7 +46,7 @@ for i = 1:N
     D_arr(i)=D;
     M_arr(i)=M;
     a_arr(i)=a;
- 
+    q_arr(i)=q;
     nu = lininterp1(atmo_dat.Z_L,atmo_dat.nu,y); % kinematic viscosity, ft2/s
     sos = lininterp1(atmo_dat.Z_L,atmo_dat.c,y); % speed of sound, ft/s
     P_a = lininterp1(atmo_dat.Z,atmo_dat.P,y); % psi
@@ -60,7 +61,8 @@ for i = 1:N
 %         %Cd = min(Aerobee150ADragData(2,:));
 %     end
     % Physics
-    D = 0.5*rho*v^2*S*Cd(i); % drag, lbf
+    q = 0.5*rho*v^2; % psf
+    D = q*S*Cd(i); % drag, lbf
     if v >= 0 && t(i) <= t_b
     %% Thrust period
         dm = mdot*dt;
@@ -130,6 +132,11 @@ if 0
     plot(t,a_arr/g,'LineWidth',2)
     grid on
     xlabel('Time(s)');ylabel("Acceleration, g's")
+    
+    %%
+    figure
+    plot(t,q_arr/144,'LineWidth',2)
+    grid on
 end
 %% Performance
 [apogee, ind] = max(y_arr);
@@ -141,7 +148,8 @@ rocket.data.performance.OTRS = OTRS;
 rocket.data.performance.apogee = apogee;
 rocket.data.performance.Mmax = max(M_arr); % mach number
 rocket.data.performance.Vmax = max(v_arr); % ft/s
-rocket.data.performance.maxg = max(a_arr)/g; 
+rocket.data.performance.maxg = max(a_arr)/g;
+rocket.data.performance.maxQ = max(q_arr)/144;
 % rocket.data.performance.height = y_arr;
 % rocket.data.aero.Cd = Cd;
 % rocket.data.aero.Mach = Ma;

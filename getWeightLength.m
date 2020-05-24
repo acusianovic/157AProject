@@ -84,6 +84,8 @@ function [rocket] = getWeightLength(rocket)
     W_presstank = rocket.prop.m_presstank; % lbm
     %W_presstank = 0; % lbm
     W_press = rocket.prop.m_press;
+    %% Pressurant Plumbing
+    L_pressplumbing = 6;
     
     %% Oxygen Tank
     W_ox = rocket.prop.m_ox;

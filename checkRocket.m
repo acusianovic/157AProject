@@ -1,4 +1,4 @@
-rocket = betsyMK4;
+rocket = betsyMK5;
 %rocket.prop.PC = P(j);
 rocket = getPropulsionDetails(rocket,atmo_dat);
 rocket = getWeightLength(rocket);
