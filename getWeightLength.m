@@ -1,25 +1,21 @@
 function [rocket] = getWeightLength(rocket)
-    Weight_guess = 1000;  %lbs, initial weight guess
-    W_dry = zeros(1,20);
-    W_dry(1) = Weight_guess;
-        
-    %% Nosecone
+   %% Nosecone
     L_nosecone = rocket.geo.nc.L*12; % inches
     rho_nosecone = 100;        % Fiberglass (lb/ft^3), change later
     W_nosecone = rho_nosecone*rocket.geo.nc.V; % ft3
     
     %% Payload
-    W_payload = 10;    % lbs
+    W_payload = 15;    % lbs
     L_payload = 12;    % inches, from requirements
     
 
     %% Recovery
     L_recovery = 7; % estimate, recovery bay length, inches
-    W_recovery = 2; % estimate
+    W_recovery = 6; % estimate
     
     %% Propulsion System Weight 
     %% Plumbing Bay 1
-    W_pbay1 = 5; % lbm
+    W_pbay1 = 9; % lbm
     L_pbay1 = 6; % inches
     
     %% Propellant Tanks
@@ -43,7 +39,7 @@ function [rocket] = getWeightLength(rocket)
     L_fueltank = rocket.prop.L_fuel; % tank length, inches
     
     %% Plumbing Bay 2
-    W_pbay2 = 5; % lbm
+    W_pbay2 = 3; % lbm
     L_pbay2 = 6; % inches
     
     %% Engine
@@ -52,14 +48,17 @@ function [rocket] = getWeightLength(rocket)
 
     %% Body
     L_body = L_payload+L_recovery+L_presstank+L_pbay1+L_oxtank+L_fueltank+L_pbay2+L_engine;
-    V_body = (pi/4) * ((D+rocket.geo.nc.tn)^2 - D^2);
+    rocket.geo.body.L = L_body;    % Body lengthm inches
+    rocket = getStructMass(rocket);
     %W_body = V_body * rho_al; % change density later
-    W_body = 45; %rocket.data.weight.body from getMassStruct can be used for more precise estimate 
+    W_body = rocket.data.weight.body; % getMassStruct can be used for more precise estimate 
+    
+    
     
     %% Fins
     S = rocket.geo.fin.S;                  %fin  area, ft^2   %
     rho_CF = 111.24;                       % density of carbon fiber, lb/ft3
-    W_fin = 0.1*S*rocket.geo.fin.ThR*rocket.geo.fin.c*rho_CF;  
+    W_fin = 0.2*S*rocket.geo.fin.ThR*rocket.geo.fin.c*rho_CF;  
     W_fins = W_fin*rocket.geo.fin.n; % lbm
     rocket.geo.fin.LE = L_body - rocket.geo.fin.c*12; % place fin at bottom of the rocket
 

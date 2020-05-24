@@ -1,8 +1,12 @@
-function [rocket] = getPropulsionDetails(rocket)
+function [rocket] = getPropulsionDetails(rocket,atmo_dat)
 
 %% Find optimal OF at given chamber pressure and expansion altitude
 
-[~,P_exit,~] = getAtm(rocket.prop.expansion_h,0); % exit pressure in psi
+P_exit = lininterp1(atmo_dat.Z,atmo_dat.P,rocket.prop.expansion_h); % psi
+%[~, ~, P_exit, ~] = atmos(rocket.prop.expansion_h/3.28);
+%P_exit = P_exit/101325*14.7; % psi
+%[~,P_exit,~] = getAtm(rocket.prop.expansion_h,0); % exit pressure in psi
+
 rocket.prop.P_e = P_exit;
 P_chamber = rocket.prop.PC;
 load('LOXCH4comb.mat','combustion');
@@ -21,11 +25,11 @@ for j = 1:length(OF)
     c1 = gam(j)+1;c2 = gam(j)-1;
     c3 = c1./c2;
     ct(j) = sqrt(2*gam(j)^2/c2*(2/c1)^c3*(1-(P_exit/P_chamber)^(c2/gam(j))));
-    Isp(j) = cstar(j)*ct(j)/9.81;
+    Isp(j) = cstar(j)*ct(j)/9.81*rocket.prop.cstar_eff*rocket.prop.ct_eff;
 end
 
 cstar = cstar*rocket.prop.cstar_eff; % m/s
-ct = ct*rocket.prop.cstar_eff; % dim.
+ct = ct*rocket.prop.ct_eff; % dim.
 
 rocket.prop.t_b = rocket.prop.Itot/rocket.prop.F; % s
 m_p = rocket.prop.Itot./Isp; % lbm
@@ -98,7 +102,7 @@ m_press = rocket.prop.P_press.*V_press/(486*R_HE); % mass of helium, lbm
 D = rocket.geo.body.D; % in
 [rocket.prop.t_oxtank,L_oxtank,m_oxtank] = vessel(rocket.prop.P_ox,D,V_oxtank,Al6061,1.5); % in, in, lbm
 [rocket.prop.t_fueltank,L_fueltank,m_fueltank] = vessel(rocket.prop.P_fuel,D,V_fueltank,Al6061,1.5); % in, in, lbm
-[rocket.prop.t_presstank,L_presstank,m_presstank] = vessel(rocket.prop.P_press,D,V_press,COPV,1.5); % in, in, lbm
+[rocket.prop.t_presstank,L_presstank,m_presstank] = vessel(rocket.prop.P_press,D,V_press,Al6061,1.5); % in, in, lbm
 %% Lowest system mass
 
 mtot = m_ox + m_oxtank + m_fuel + m_fueltank + m_press + m_presstank + m_engine; % lbm

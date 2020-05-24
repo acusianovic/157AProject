@@ -1,4 +1,4 @@
-function [rocket] = oneDOFflightTrajectory(rocket)
+function [rocket] = oneDOFflightTrajectory(rocket,atmo_dat)
 % Simulate rocket in 1D to get apogee, OTRS
 
 % simulation parameters
@@ -45,19 +45,21 @@ for i = 1:N
     D_arr(i)=D;
     M_arr(i)=M;
     a_arr(i)=a;
+ 
+    nu = lininterp1(atmo_dat.Z_L,atmo_dat.nu,y); % kinematic viscosity, ft2/s
+    sos = lininterp1(atmo_dat.Z_L,atmo_dat.c,y); % speed of sound, ft/s
+    P_a = lininterp1(atmo_dat.Z,atmo_dat.P,y); % psi
+    rho = lininterp1(atmo_dat.Z,atmo_dat.rho,y); % slug/ft3
     
-    %[rho,P_a,~] = getAtm(y,0); % slug/ft3, psi
-    [~, sos, P_a, rho] = atmos(y/3.28);
-    sos = sos*3.28;
-    rho = rho/515.379; % slug/ft3
-    P_a = P_a/101325*14.7; % psi
-    M = abs(v/(a*3.28));
-    Cd(i) = getDrag2(rocket,y_arr(i),abs(v_arr(i)),sos);
+    M = abs(v/sos);
+    Cd(i) = getDrag2(rocket,v,sos,nu);
+    
 %     if M < 7
 %         %Cd = lininterp1(Aerobee150ADragData(1,:),Aerobee150ADragData(2,:),M);
 %     else
 %         %Cd = min(Aerobee150ADragData(2,:));
 %     end
+
     % Physics
     D = 0.5*rho*v^2*S*Cd(i); % drag, lbf
     if v >= 0 && t(i) <= t_b
@@ -109,13 +111,15 @@ if 0
     ylabel('Height, miles')
     xlabel('Time, s')
     grid on
-    xlim([0 134.5])
+    xlim([0 260.5])
     set(gca, 'FontSize', 11, 'FontWeight', 'bold')
 
     %%
     figure
-    plot(t,T_arr,t,D_arr)
+    plot(t,T_arr,t,D_arr,'LineWidth',2)
     legend('Thrust','Drag')
+    xlim([0 134.5])
+    grid on
     %%
     figure
     plot(t,v_arr)
@@ -131,6 +135,8 @@ if 0
 end
 %% Performance
 [apogee, ind] = max(y_arr);
+
+rocket.prop.F_opt = lininterp1(y_arr,T_arr,rocket.prop.expansion_h);
 
 rocket.prop.F_mean = mean(T_arr(1:apind));
 rocket.data.performance.OTRS = OTRS;
