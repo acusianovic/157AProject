@@ -49,7 +49,7 @@ b = rocket.geo.fin.b;     % Semipan of fin, ft
 Cr = rocket.geo.fin.c;      % Root Chord, ft
 Ct = rocket.geo.fin.TR*Cr;  % Tip Chord, ft
 XS = b*tand(rocket.geo.fin.sweep);  % Sweep length, ft
-XF = rocket.geo.fin.LE/12;            % Fin location, ft
+XF = (rocket.geo.fin.LE/12 + rocket.geo.nc.L);% Fin location, ft
 
 % Fin/BOdy Interference Factor
 Kfb = 1 + d/(2*b + d);
