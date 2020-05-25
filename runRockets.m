@@ -21,14 +21,14 @@ while  g < numGoodRockets
     
     newRocket = rocket();
     newRocket = getRandomRocket(newRocket); % initialize random rocket
-    newRocket = getPropulsionDetails(newRocket); % initialize rocket propulsion
+    newRocket = getPropulsionDetails(newRocket,atmo_dat); % initialize rocket propulsion
     newRocket = getWeightLength(newRocket); % estimate rocket weight and length
     newRocket = getCP(newRocket); % get center of pressure versus angle of attack
     newRocket = getCG(newRocket); % get CG for dry mass and wet mass
     newRocket = checkFlutter(newRocket);% Check for fin flutter
     %newRocket = getInertias(newRocket); % get center of pressure versus mach number and propellant weight
 
-    newRocket = oneDOFflightTrajectory(newRocket); % get trajectory, apogee, and OTRS
+    newRocket = oneDOFflightTrajectory(newRocket,atmo_dat); % get trajectory, apogee, and OTRS
     newRocket = stability(newRocket); % static stability
    
     % calculate rocket stability parameters (static margin)
