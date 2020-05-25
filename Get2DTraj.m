@@ -1,3 +1,5 @@
+clc
+
 load('betsyMK5.mat','betsyMK5')
 load('atmo_dat.mat','atmo_dat')
 load('WindData.mat','WindData')
@@ -85,6 +87,7 @@ while h(step) >= 0 && step <= MaxIterations && x(step) < 5280*50
 
     %get mach number
     Mach(step) = v(step)/a;
+    SOS(step) = a;
     
     %Drag
     %choose drag parameters
@@ -185,8 +188,10 @@ fprintf('\nDrift: %0.0fmi',x(end)/5280)
 fprintf('\nFinal Descent Velocity: %0.0fft/s',vy(end))
 fprintf('\nOff the Rail Speed: %0.0f ft/s',rocket.data.performance.OTRS)
 fprintf('\nFinal Mass: %0.0f lbs',m(end)*32.2)
+fprintf('\n*** Maximum Velocity and Acceleration ***')
 fprintf('\nMaximum Velocity: %0.0f ft/s',max(v))
 fprintf('\nMaximum Mach Number: %0.0f', max(Mach))
+%fprintf('\nMaximum Acceleration: %0.0fg''s', max(sqrt(ax.^2+ay.^2))/32.2);
 %% Plots: Drift & Altitude
 
 figure
