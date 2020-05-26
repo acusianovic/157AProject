@@ -1,11 +1,13 @@
-%function rocket = Get2DTraj(rocket)
-%2D flight trajectory simulator
-%   This function calculates the altitude and horizontal displacement of
-%   the rocket over time.  It is also pre-configured to report dynamic
-%   pressure, mach number, speed of sound, etc.  
+clc
 
-load('betsyMK3.mat','betsyMK3')
-rocket = betsyMK3;
+load('betsyMK5.mat','betsyMK5')
+load('atmo_dat.mat','atmo_dat')
+load('WindData.mat','WindData')
+Altitude = 0:100000;
+Altitude = Altitude*3.28084; %[ft]
+Meridian = WindData(:,1)*3.28084;%[ft/s]
+
+rocket = betsyMK5;
 
 %%% Physical Parameters %%%
 g0 = 32.174; %sea level gravitational acceleration [ft/s^2]
@@ -39,7 +41,7 @@ ay =0; %y acceleration [ft/s^2]
 %%% Recovery Parameters %%%
 RecoveryAltitude = 1000; %[ft]
 DrogueArea = (pi/4)*1^2; %[ft^2]
-ChuteArea = (pi/4)*2.6^2; %[ft^2]
+ChuteArea = (pi/4)*3.7393^2; %[ft^2]
 CdDrogue = 1.5;
 CdChute = 2.2;
 
@@ -60,8 +62,10 @@ while h(step) >= 0 && step <= MaxIterations && x(step) < 5280*50
     %Thust
     if m(step) > DryMass %during burn
         %update ambient pressure
-        [~, a, Pa, rho] = atmos(h(step)/3.28); %get speed of sound, pressure, density
-        Pa = Pa/101325*14.7; % psi
+        nu = lininterp1(atmo_dat.Z_L,atmo_dat.nu,h(step)); % kinematic viscosity, ft2/s
+        a = lininterp1(atmo_dat.Z_L,atmo_dat.c,h(step)); % speed of sound, ft/s
+        Pa = lininterp1(atmo_dat.Z,atmo_dat.P,h(step)); % psi
+        rhoAir(step) = lininterp1(atmo_dat.Z,atmo_dat.rho,h(step)); % slug/ft3 
         %update thrust
         Ft(step+1) = mdot*cstar*getThrustCoefficient(rocket,Pa);
         %update mass
@@ -69,7 +73,8 @@ while h(step) >= 0 && step <= MaxIterations && x(step) < 5280*50
         %update thrust counter
         ThrustCounter = ThrustCounter+1;
     else %after burn
-        [~, a, ~, rho] = atmos(h(step)/3.28);
+        rhoAir(step) = lininterp1(atmo_dat.Z,atmo_dat.rho,h(step)); % slug/ft3 
+        a = lininterp1(atmo_dat.Z_L,atmo_dat.c,h(step)); % speed of sound, ft/s
         Ft(step+1) = 0;
         m(step+1) = m(step);
     end
@@ -80,12 +85,11 @@ while h(step) >= 0 && step <= MaxIterations && x(step) < 5280*50
     %calculate new force due to gravity
     Fg(step) = -m(step)*g;
 
-    %Drag
-    %convert density to slugs/ft^3
-    rhoAir(step) = rho/515.379; % [slugs/ft^3]
-    %convert speed of sound to ft/s
-    a = a*3.28; %[ft/s]
+    %get mach number
+    Mach(step) = v(step)/a;
+    SOS(step) = a;
     
+    %Drag
     %choose drag parameters
     if v(step) < 20 %no drag
         Af = 0;
@@ -95,7 +99,7 @@ while h(step) >= 0 && step <= MaxIterations && x(step) < 5280*50
     elseif v(step) >= 20 && vy(step) > 0
         Af = (pi/4)*RocketDiam^2; %[ft^2]
         sign = -1;
-        [Cd(step),~,~,~,~,~,~,~] = getDrag2(rocket,h(step),v(step),a);
+        Cd(step) = getDrag2(rocket,v(step),a,nu);
         Fd(step) = sign*0.5*rhoAir(step)*v(step)^2*Af*Cd(step);
     elseif vy(step) < 0 && h(step) > RecoveryAltitude && ChuteDeployed == 0 %after apogee, before main chute deployment
         if DrogueDeployed == 0
@@ -104,8 +108,18 @@ while h(step) >= 0 && step <= MaxIterations && x(step) < 5280*50
             fprintf( '\nCurrent Altitude: %0.0fmi \nCurrent Drift:%0.0fmi'...
                 ,h(step)/5280,x(step)/5280)
             fprintf( '\nCurrent Air Density: %0.9f slugs/ft^3', rhoAir(step))
+            DrogueLoopInfo = [t(step) x(step) h(step)];
             AOA = 0;
-
+            
+        end
+        sign = 1;
+        Af = DrogueArea; %[ft^2]
+        Cd(step) = CdDrogue;
+        Fd(step) = sign*0.5*rhoAir(step)*vy(step)^2*Af*Cd(step);
+    else %after apogee, after main chute deployment
+        if ChuteDeployed == 0
+            ChuteDeployed = 1;
+            fprintf( '\n*** Main deployed at %0.0fs ***', t(step))
             fprintf( '\nCurrent Altitude: %0.0fft \nCurrent Drift:%0.0fmi'...
                 ,h(step),x(step)/5280)
             fprintf( '\nCurrent Air Density: %0.9f slugs/ft^3', rhoAir(step))
@@ -115,13 +129,16 @@ while h(step) >= 0 && step <= MaxIterations && x(step) < 5280*50
         Af = ChuteArea; %[ft^2]
         Cd(step) = CdChute;
         Fd(step) = sign*0.5*rhoAir(step)*vy(step)^2*Af*Cd(step);
-        %get wind speed
-        if h(step) < 300000
-            vwind = lininterp1(Altitude,Meridian,h(step));
-            Fwind(step) = 0.5*rhoAir(step)*vwind^2*Cd(step)*Af;
-        end
     end
     q(step) = 0.5*rhoAir(step)*v(step)^2;
+    
+    %get wind speed
+    vwind = 0;
+    Fwind(step) = 0;
+    if h(step) < 300000
+        vwind = lininterp1(Altitude,Meridian,h(step));
+        Fwind(step) = 0.5*rhoAir(step)*vwind^2*Cd(step)*Af;
+    end
     
     %%% Kinematics %%%
     
@@ -171,23 +188,26 @@ fprintf('\nDrift: %0.0fmi',x(end)/5280)
 fprintf('\nFinal Descent Velocity: %0.0fft/s',vy(end))
 fprintf('\nOff the Rail Speed: %0.0f ft/s',rocket.data.performance.OTRS)
 fprintf('\nFinal Mass: %0.0f lbs',m(end)*32.2)
+fprintf('\n*** Maximum Velocity and Acceleration ***')
 fprintf('\nMaximum Velocity: %0.0f ft/s',max(v))
 fprintf('\nMaximum Mach Number: %0.0f', max(Mach))
+%fprintf('\nMaximum Acceleration: %0.0fg''s', max(sqrt(ax.^2+ay.^2))/32.2);
 %% Plots: Drift & Altitude
 
 figure
 hold on
 plot(x/5280,h/5280,'LineWidth',1.5)
+axis([0 35 -10 75])
 xlabel('Drift [mi]')
 ylabel('Altitude [mi]')
 plot(DrogueLoopInfo(2)/5280,DrogueLoopInfo(3)/5280,'rd','LineWidth',1.5)
 A = string(round(DrogueLoopInfo(3)/5280));
-A = { strcat('Apogee/Drogue = ',A,'mi') };
+A = { strcat('Apogee/Drogue: ',A,'mi') };
 labelpoints(DrogueLoopInfo(2)/5280,DrogueLoopInfo(3)/5280,A,'N',0.2)
 plot(MainChuteLoopInfo(2)/5280,MainChuteLoopInfo(3)/5280,'rd','LineWidth',1.5)
 B = string(round(MainChuteLoopInfo(3)));
-B = { strcat('Parachute Deployment = ',B,'ft') };
-labelpoints(MainChuteLoopInfo(2)/5280,MainChuteLoopInfo(3)/5280,B,'SW',0.3)
+B = { strcat('Parachute Deployment: ',B,'ft') };
+labelpoints(MainChuteLoopInfo(2)/5280,MainChuteLoopInfo(3)/5280,B,'S',0.2)
 ax = gca;
 ax.Box = 'on';
 ax.FontSize = 11;
@@ -310,4 +330,3 @@ ylabel('AOA [deg]');
 
 plot(DisturbTime,Omega0(1:end-1))
 
-=======

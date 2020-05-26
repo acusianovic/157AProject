@@ -58,15 +58,16 @@ Prg0 = mug0*cpg0/kg0; % gas stagnation Prandtl number
 Vc = prop.Vc*0.0254^3; % chamber volume, m3
 At = prop.At*0.0254^2; % throat area, m2
 Ae = prop.Ae*0.0254^2; % exit area, m2
-Ac = At*3; % chamber area, m2
-theta = 30; % contraction angle, deg
-alpha = 15; % expansion angle, deg
-rc1 = 0.05; % frustum entry radius of curvature, m
-rc2 = 0.05; % throat radius of curvature, m
+Ac = At*6; % chamber area, m2
+theta = 60; % contraction angle, deg
 dx = 0.001; % location precision, m
 
+Dc = sqrt(4*Ac/pi); % chamber diameter, m
+Dt = sqrt(4*At/pi); % throat diameter, m
+De = sqrt(4*Ae/pi); % exit diameter, m
+
 % find component length and generate location and diamter arrays
-[x,D,Dc,Dt,De,Lc,Lf,Ln] = Geogen(Vc,At,Ae,Ac,theta,alpha,rc1,rc2,dx);
+[x,D,Lc,Lf,Ln] = getEngineGeometry(Vc,Ac,At,Ae,theta,dx);
 
 A = pi.*D.^2/4; % area array, m2
 dR = [0,diff(D/2)]; % differential radius element, m
@@ -85,7 +86,7 @@ kc = 2.5; % thermal barrier coating thermal conductivity, W/m-k
 %% Define coolant passage geometry
 
 n = 120; % number of passages
-Ap = 0.0002/n; % passage cross-sectional area, m2
+Ap = 0.0004/n; % passage cross-sectional area, m2
 tf = 0.5/1000; % passage wall (fin) thickness, m
 a = pi.*D/n-tf; % passage width, m
 b = Ap./a; % passage height, m
@@ -104,7 +105,8 @@ mengine = (Vinner+Vouter+Vfins)*7900; % engine mass, kg
 
 %% Initialize simulation
 
-Bartz = 0.026/Dt^0.2*mug0^0.2*cpg0/Prg0^0.6*(Pc/cstar)^0.8*(Dt/rc2)^0.1; % Bartz relation constant term
+rc = Dt*(1.5+0.382)/4;
+Bartz = 0.026/Dt^0.2*mug0^0.2*cpg0/Prg0^0.6*(Pc/cstar)^0.8*(Dt/rc)^0.1; % Bartz relation constant term
 
 % prepare area ratio - Mach number lookup table
 Mdata1 = 0.01:0.01:1;
@@ -125,8 +127,8 @@ Twg = zeros(1,length(x)); % coating surfact temperature, K
 Twi = zeros(1,length(x)); % hot side wall temperature, K
 Twl = zeros(1,length(x)); % coolant side wall temperature, K
 Tb = zeros(1,length(x)); % coolant boiling point, K
-Tl = zeros(1,length(x)); Tl(1) = 60; % coolant temperature, K
-Pl = zeros(1,length(x)); Pl(1) = 400*6894.76; % coolant pressure, Pa
+Tl = zeros(1,length(x)); Tl(end) = 60; % coolant temperature, K
+Pl = zeros(1,length(x)); Pl(end) = 500*6894.76; % coolant pressure, Pa
 vl = zeros(1,length(x)); % coolant velocity, m/s
 Rel = zeros(1,length(x)); % coolant Reynolds number
 f = zeros(1,length(x)); % Darcy friction factor
@@ -143,7 +145,7 @@ O2 = Oxygen();
 
 %% Run simulation
 
-for i = 1:length(x) % run through the entire engine
+for i = length(x):-1:1 % run through the entire engine
     if i < 1+(Lc+Lf)/dx
         M(i) = interp1(ARdata1,Mdata1,A(i)/At,'spline'); % gas Mach number
     else
@@ -193,9 +195,9 @@ for i = 1:length(x) % run through the entire engine
     Tb(i) = LoxBoiling.T(Pl(i)); % coolant boiling point, K
     f(i) = interp1(Redata,fddata,Rel(i),'spline'); % Darcy friction factor
     dp = dl(i)*f(i)*rhol/2*vl(i)^2/Dh(i); % coolant pressure drop, Pa
-    if i < length(x)
-        Tl(i+1) = dq(i)/mdotl/cpl+Tl(i); % increased coolant temperature, K
-        Pl(i+1) = Pl(i)-dp; % decreased coolant pressure, Pa
+    if i > 1
+        Tl(i-1) = dq(i)/mdotl/cpl+Tl(i); % increased coolant temperature, K
+        Pl(i-1) = Pl(i)-dp; % decreased coolant pressure, Pa
     end
 end
 
@@ -215,7 +217,7 @@ plot(x,Tb,'--','color','#0072BD')
 hold off
 ylabel('Temperature (K)')
 yyaxis right
-plot(x,D)
+plot(x,D/2)
 ylabel('Engine inner diameter (m)')
 xlabel('Downstream location (m)')
 legend('Coating surface','Wall surface (hot)','Wall surface (cold)','Film boiling limit','Coolant','Boiling point','location','northeast')
@@ -261,35 +263,3 @@ yyaxis right
 plot(x,b./a)
 ylabel('Aspect ratio')
 xlabel('Downstream location (m)')
-
-function [x,D,Dc,Dt,De,Lc,Lf,Ln] = Geogen(Vc,At,Ae,Ac,theta,alpha,rc1,rc2,dx)
-    Dt = sqrt(4*At/pi); % throat diameter, m
-    De = sqrt(4*Ae/pi); % exit diameter, m
-    Dc = sqrt(4*Ac/pi); % chamber diameter, m
-
-    Lf = (Dc-Dt)/2*tand(theta); % frustum length (first order estimate), m
-    Lc = (Vc-Ac*Lf*(1+sqrt(At/Ac)+At/Ac)); % chamber length, m
-
-    Lc = round(Lc,3); % rounded chamber length, m
-    x0 = Lc;
-    x1 = round(x0+rc1*sind(theta),3); y1 = Dc/2-rc1*(1-cosd(theta));
-    y2 = Dt/2+rc2*(1-cosd(theta)); x2 = round(x1+(y1-y2)/tand(theta),3);
-    xt = x2+rc2*sind(theta);
-    x3 = round(xt+rc2*sind(alpha),3); y3 = Dt/2+rc2*(1-cosd(alpha));
-    ye = De/2; xe = round(x3+(ye-y3)/tand(alpha),3);
-    Lf = xt-x0; % frustum length, m
-    Ln = xe-xt; % nozzle length, m
-
-    x = 0:dx:xe; % downstream location array, m
-    xarray1 = 0:dx:x0;
-    xarray2 = x0:dx:x1;
-    xarray3 = x1:dx:x2;
-    xarray4 = x2:dx:x3;
-    xarray5 = x3:dx:xe;
-    yarray1 = Dc/2*ones(1,length(xarray1));
-    yarray2 = Dc/2-rc1+sqrt(rc1^2-(xarray2-x0).^2);
-    yarray3 = linspace(y1,y2,length(xarray3));
-    yarray4 = Dt/2+rc2-sqrt(rc2^2-(xarray4-xt).^2);
-    yarray5 = linspace(y3,De/2,length(xarray5));
-    D = 2*[yarray1,yarray2(2:end),yarray3(2:end),yarray4(2:end),yarray5(2:end)]; % engine diameter array, m
-end
