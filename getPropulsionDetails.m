@@ -102,7 +102,7 @@ m_press = rocket.prop.P_press.*V_press/(486*R_HE); % mass of helium, lbm
 D = rocket.geo.body.D; % in
 [rocket.prop.t_oxtank,L_oxtank,m_oxtank] = vessel(rocket.prop.P_ox,D,V_oxtank,Al6061,1.5); % in, in, lbm
 [rocket.prop.t_fueltank,L_fueltank,m_fueltank] = vessel(rocket.prop.P_fuel,D,V_fueltank,Al6061,1.5); % in, in, lbm
-[rocket.prop.t_presstank,L_presstank,m_presstank] = vessel(rocket.prop.P_press,D,V_press,Al6061,1.5); % in, in, lbm
+[rocket.prop.t_presstank,L_presstank,m_presstank] = vessel(rocket.prop.P_press,D/2,V_press,Al6061,1.5); % in, in, lbm
 %% Lowest system mass
 
 mtot = m_ox + m_oxtank + m_fuel + m_fueltank + m_press + m_presstank + m_engine; % lbm
@@ -150,6 +150,7 @@ rocket.prop.m_fueltank = m_fueltank(Ind);
 rocket.prop.m_press = m_press(Ind);
 rocket.prop.V_press = V_press(Ind);
 rocket.prop.L_presstank = L_presstank(Ind);
+rocket.prop.D_presstank = D/2;
 rocket.prop.m_presstank = m_presstank(Ind);
 %%
 % figure
