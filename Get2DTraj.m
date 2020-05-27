@@ -14,6 +14,8 @@ g0 = 32.174; %sea level gravitational acceleration [ft/s^2]
 
 %%% Define and Re-Name Rocket Geometry %%%
 RocketDiam = rocket.geo.body.D/12; %body diameter [ft]
+L = rocket.data.length.L/12; %nose cone to fuel exit [ft]
+xCG = rocket.data.CG.wet/12; %from tip of nose cone [ft]
 
 %%% Define Propulsion Details %%%
 cstar = rocket.prop.cstar*3.28; % characteristic velocity, ft/s
@@ -49,6 +51,10 @@ CdChute = 2.2;
 dt = 0.001; %time step [s]
 step = 1; %count loop iterations
 MaxIterations = 10^6; %force stop condition
+
+%%% Set IL for now %%%
+IL = 300;
+ox = 0;
 
 %counters
 ThrustCounter = 0; %for finding burnout parameters later
@@ -109,13 +115,12 @@ while h(step) >= 0 && step <= MaxIterations && x(step) < 5280*50
                 ,h(step)/5280,x(step)/5280)
             fprintf( '\nCurrent Air Density: %0.9f slugs/ft^3', rhoAir(step))
             DrogueLoopInfo = [t(step) x(step) h(step)];
-            AOA = 0;
-            
         end
         sign = 1;
         Af = DrogueArea; %[ft^2]
         Cd(step) = CdDrogue;
         Fd(step) = sign*0.5*rhoAir(step)*vy(step)^2*Af*Cd(step);
+        AOA(step) = 0;
     else %after apogee, after main chute deployment
         if ChuteDeployed == 0
             ChuteDeployed = 1;
@@ -129,22 +134,25 @@ while h(step) >= 0 && step <= MaxIterations && x(step) < 5280*50
         Af = ChuteArea; %[ft^2]
         Cd(step) = CdChute;
         Fd(step) = sign*0.5*rhoAir(step)*vy(step)^2*Af*Cd(step);
+        AOA(step) = 0;
     end
     q(step) = 0.5*rhoAir(step)*v(step)^2;
     
     %get wind speed
     vwind = 0;
     Fwind(step) = 0;
-    if h(step) < 300000
+    if h(step) < 300000 && vy(step) < 0
         vwind = lininterp1(Altitude,Meridian,h(step));
         Fwind(step) = 0.5*rhoAir(step)*vwind^2*Cd(step)*Af;
     end
     
+    %%% flight angle stuff %%%
+    
     %%% Kinematics %%%
     
     %calculate net force in each direction
-    Fx = (Ft(step)+Fd(step)+Fwind(step))*sin(AOA);
-    Fy = (Ft(step)+Fd(step))*cos(AOA)+Fg(step);
+    Fx = (Ft(step)+Fd(step))*sin(AOA(step))+Fwind(step);
+    Fy = (Ft(step)+Fd(step))*cos(AOA(step))+Fg(step);
     %acceleration
     ax(step+1) = Fx/m(step);
     ay(step+1) = Fy/m(step);
@@ -160,6 +168,25 @@ while h(step) >= 0 && step <= MaxIterations && x(step) < 5280*50
         h(step+1) = 0;
         vy(step+1) = 0;
         vx(step+1) = 0;
+    end
+    
+    %%% Stability Analysis %%%
+    
+    if vy(step)>=0
+        %Get static stability parameters
+        [xDif,xCP,CNT,CNFB,XF,CNN,xN] = Barrowman(rocket,AOA(step)); %[ft,rad^-1]
+        Sref = (pi/4)*RocketDiam^2; %[ft^2]
+        xCP = xCP/12; %change CP to ft 
+        %Define dynamics stability coefficients
+        c1(step) = (rhoAir(step)/2)*v(step)^2*Af*CNT*xDif; %[slugs ft^2/s^2]
+        c2(step) = (rhoAir(step)/2)*v(step)*Af*(CNFB*(XF-xCP)^2+...
+            CNN*(xN-xCP)^2)+mdot*(L-xCG)^2; % [slugs*ft^2]
+        %rotational kinematics
+        N(step) = 0.5*rhoAir(step)*v(step)^2*CNT*AOA(step)*pi*RocketDiam^2/4;
+        dox = dt*( N(step)*xDif-c2(step)*ox(step)-c1(step)*AOA(step) )/IL; %change in angular vel [rad/s]
+        dAOA = dt*( ox(step)+dox/2 ); %change in AOA [rad]
+        ox(step+1) = ox(step)+dox; %angular velocity [rad/s]
+        AOA(step+1) = dAOA+AOA(step); % [rad]
     end
     
     %%% find OTRS %%%
@@ -181,6 +208,28 @@ rocket.data.performance.OTRS = OTRS; %[ft/s]
 rocket.data.performance.apogee = max(h); %[ft]
 rocket.data.performance.range = max(x); %[ft]
 
+%%% Store Betsy MK5 Traj %%%
+Traj.x = x; %ft
+Traj.h = h; %ft
+Traj.v = v; %ft/s
+Traj.vx = vx; %ft/s
+Traj.vy = vy; %ft/s
+Traj.ay = ay; %ft/s^2
+Traj.q = q; %psf
+Traj.c1 = c1; %slugs ft^2/s^2
+Traj.c2 = c2; %slugs ft^2
+Traj.N = N; %slugs
+Traj.ox = ox; %angular velocity about pitch axis [rad/s]
+Traj.t = t; %time
+Traj.IL = IL; %moment of inertia about pitch axis [slugs/ft^2]
+Traj.rhoAir = rhoAir; %air density [slugs/ft^2]
+Traj.OTRS = [OTRS,OTRStep]; %ft/s
+Traj.xCG = xCG; %ft
+Traj.AOA = AOA*180/pi; %[deg]
+%%
+Traj.FPA = atand(vx(2:end)./vy(2:end)); %degrees
+Traj.Pitch = Traj.AOA+Traj.FPA; %angle of attack [deg]
+%%
 %%%printouts
 fprintf('\n*** Performance ***')
 fprintf('\nApogee: %0.0fft/s', max(h))
@@ -260,8 +309,40 @@ grid on
 xlabel('Time [s]');
 ylabel('Dynamic Pressure [psf]');
 
+%% Plots: Stability Angles v. time
+[~,index] = max(h);
+AOA = Traj.AOA;
+FPA = Traj.FPA;
+Pitch = Traj.Pitch;
+t = Traj.t(2:end);
+figure
+hold on
+plot(t(1:index-5),AOA(1:index-5),'LineWidth',1.5)
+plot(t(1:index-5),FPA(1:index-5),'LineWidth',1.5)
+plot(t(1:index-5),Pitch(1:index-5),'LineWidth',1.5)
+ax = gca;
+ax.Box = 'on';
+ax.FontSize = 11;
+ax.LineWidth = 1.5;
+ax.GridLineStyle = ':';
+grid on
+xlabel('Time [s]');
+ylabel('Angle of Attack [deg]');
+legend('AOA','Flight Path Angle','Pitch Angle','location','northwest')
+
+%% Plots: Torque v. time
+
+time = t(1:end-1);
+figure
+hold on
+plot(time,N)
+plot(time,c2.*ox(1:end-1))
+plot(time,c1.*AOA(1:end-1))
+
 %% Harmonic Oscillator Stability Model
 clear sign
+
+load('TrajSample.mat','Traj')
 
 %%% Input Parameters %%%
 m = rocket.data.weight.wet/32.2; %rocket wet mass [slugs]
@@ -269,54 +350,39 @@ mdot = rocket.prop.mdot/32.2; %mdot [slugs/s]
 Diam = rocket.geo.body.D/12; %rocket diameter [ft]
 L = rocket.data.length.L/12; %nose cone to fuel exit [ft]
 Ar = (pi/4)*Diam^2; %[ft^2]
-AOA = atan( 22/160 ); %initial angle of attack [rad]
-xCG = rocket.data.CG.wet/12; %from tip of nose cone [ft]
-IL = 260; %[slugs ft^2]
+xCG = Traj.xCG; %from tip of nose cone [ft]
+IL = Traj.IL; %[slugs ft^2]
+OTRS = Traj.OTRS(1);
 
-i = 0;
-DisturbTime = 0;
+%%% test case %%%
+index = Traj.OTRS(2);
+AOA = atan( 22/OTRS ); %initial angle of attack [rad]
 
-%%% Loop through trajectory %%%
-for k = OTRStep:length(t)    
+%%% time %%%
+t = 0:0.1:20;
 
-    if h(k) > 300000
-        break
-    end
-    
-    i = i+1;
-    DisturbTime(i+1) = DisturbTime(i)+dt;
-    
-    %%% Get static stability parameters %%%
-    [xDif,xCP,CNT,CNFB,XF,CNN,xN] = Barrowman(rocket,AOA(i)); %[ft,rad^-1]
-    Sref = (pi/4)*Diam^2; %[ft^2]
-    xCP = xCP/12;
-    XF = XF/12;
-    xN = xN/12;
-    
-    %%% Define dynamics stability coefficients %%%
-    c1(i) = (rhoAir(k)/2)*v(k)^2*Ar*CNT*xDif; %[slugs ft^2/s^2]
-    c2(i) = (rhoAir(k)/2)*v(k)*Ar*(CNFB*(XF-xCP)^2+...
-        CNN*(xN-xCP)^2)+mdot*(L-xCG)^2; % [slugs*ft^2]
-    
-    %%% Calculate wind moment %%%
-    Moment(i) = xDif*(0.5*rhoAir(k)*v(k)^2*CNT*AOA(i)*Sref);
-    H(i) = Moment(i)*dt; %impulse response stuff
-    Omega0(i) = H(i)/IL;
-    A(i) = H(i)/IL/omega;
-    
-    %%% Define sinusoid components %%%
-    D = c2(i)/2/IL; %decay constant [s^-1]
-    omega = sqrt( c1(i)/IL-c2(i)^2/(4*IL^2) ); %arguement
-    phi(i) = 0; %impulse response stuff
-    
-    %%% Update AOA %%%
-    AOA(i+1) = A(i)*exp(-t(k)*D).*sin(omega*t(k)+phi(i));
+%%% Get static stability parameters %%%
+[xDif,xCP,CNT,CNFB,XF,CNN,xN] = Barrowman(rocket,AOA); %[ft,rad^-1]
+Sref = (pi/4)*Diam^2; %[ft^2]
+xCP = xCP/12;
 
-end
+%%% Calculate wind moment %%%
+Moment = N(index); %lbf ft
+H = Moment*dt; %impulse response stuff
+Omega0 = H/IL;
+A = H/IL/omega;
+
+%%% Define sinusoid components %%%
+D = c2(index)/2/IL; %decay constant [s^-1]
+omega = sqrt( c1(index)/IL-c2(index)^2/(4*IL^2) ); %arguement
+phi = 0; %impulse response stuff
+
+%%% Update AOA %%%
+AOA = A*exp(-t*D).*sin(omega*t+phi);
 
 figure
 hold on
-plot(DisturbTime,AOA*180/pi,'LineWidth',1.5)
+plot(t,AOA*180/pi,'LineWidth',1.5)
 ax = gca;
 ax.Box = 'on';
 ax.FontSize = 11;
@@ -326,7 +392,4 @@ grid on
 xlabel('Time [s]');
 ylabel('AOA [deg]');
 
-%%
-
-plot(DisturbTime,Omega0(1:end-1))
 
