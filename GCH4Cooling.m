@@ -3,8 +3,7 @@ close all; clear;
 %% Load data from preliminary design
 
 load('LOXCH4comb.mat','combustion');
-load('LoxTransport.mat');
-load('LoxBoiling.mat');
+load('GCH4Transport.mat');
 load('betsyMK4.mat');
 prop = betsyMK4.prop;
 
@@ -12,13 +11,13 @@ Pc = prop.PC*6894.76; % chamber pressure, Pa
 cstar = prop.cstar; % characteristic velocity, m/s
 OF = prop.OF; % O/F ratio
 mdot = prop.mdot*0.453592; % propellant mass flow rate, kg/s
-mdotl = prop.mdot_ox*0.453592; % coolant (lox) mass flow rate, kg/s
+mdotl = prop.mdot_fuel*0.453592; % coolant (lox) mass flow rate, kg/s
 
 
 %% Reconstruct gas for later evaluations
 
 o = Oxygen(); mw_ox = meanMolecularWeight(o);
-tf = Methane(); mw_fuel = meanMolecularWeight(tf);
+f = Methane(); mw_fuel = meanMolecularWeight(f);
 OF_stoich = (2*mw_ox)/(mw_fuel);
 phi = OF_stoich/OF;
 gas = GRI30('Mix');
@@ -29,13 +28,13 @@ x(speciesIndex(gas,'O2')) = 2.0; % 2 moles of oxygen per mole of fuel
 set(gas,'Temperature',300,'Pressure',Pc,'MoleFractions',x)
 h0 = enthalpy_mass(gas); % J/kg
 set(o,'Temperature',90,'Pressure',Pc);
-set(tf,'Temperature',111,'Pressure',Pc);
+set(f,'Temperature',600,'Pressure',Pc);
 h_ox1 = enthalpy_mass(o);
-h_fuel1 = enthalpy_mass(tf);
+h_fuel1 = enthalpy_mass(f);
 set(o,'Temperature',300,'Pressure',Pc);
-set(tf,'Temperature',300,'Pressure',Pc);
+set(f,'Temperature',300,'Pressure',Pc);
 h_ox2 = enthalpy_mass(o);
-h_fuel2 = enthalpy_mass(tf);
+h_fuel2 = enthalpy_mass(f);
 hmod = h0-(h_ox2-h_ox1)*(OF/(OF+1))-(h_fuel2-h_fuel1)*(1/(OF+1));
 equilibrate(gas,'HP');
 set(gas,'P',Pc,'H',hmod)
@@ -75,18 +74,15 @@ dl = sqrt(dx^2+dR.^2); % differential wall length element, m
 dA = pi*dl.*(D+dR); % differential wall area element, m2
 
 FOS = 1.5; % chamber factor of safety
-sigmaSS310 = 19300; % yield strength of 310 steel, psi
-tw = Pc/6894.76*Dc/2/(sigmaSS310/FOS); % chamber wall thickness, m
-kSS = 17; % stainless steel thermal conductivity, W/m-k
-
-tc = 0.001; % thermal barrier coating thickness, m
-kc = 2.5; % thermal barrier coating thermal conductivity, W/m-k
+s718 = 70e3; % yield strength of 310 steel, psi
+tw = Pc/6894.76*Dc/2/(s718/FOS); % chamber wall thickness, m
+k718 = 24; % stainless steel thermal conductivity, W/m-k
 
 
 %% Define coolant passage geometry
 
 n = 120; % number of passages
-Ap = 0.0004/n; % passage cross-sectional area, m2
+Ap = 0.001/n*(D./Dc).^2.2; % passage cross-sectional area, m2
 tf = 0.5/1000; % passage wall (fin) thickness, m
 a = pi.*D/n-tf; % passage width, m
 b = Ap./a; % passage height, m
@@ -99,7 +95,7 @@ SA = sum(dA); % enginer inner surface area, m2
 Vinner = SA*((D+tw)/D)*tw; % inner shell volume, m3
 Vouter = SA*((D+3*tw)/D)*tw; % outer shell volume, m3
 Vfins = sum(n*dl.*b*tf); % fins volume, m3
-mengine = (Vinner+Vouter+Vfins)*7900; % engine mass, kg
+mengine = (Vinner+Vouter+Vfins)*8220; % engine mass, kg
 % chamber entry cap/ injector not included
 
 
@@ -115,7 +111,7 @@ Mdata2 = 1:0.01:4;
 ARdata2 = ((gam+1)/2)^(-(gam+1)/(2*(gam-1)))*(1+(gam-1)/2*Mdata2.^2).^((gam+1)/(2*(gam-1)))./Mdata2;
 
 % prepare Reynolds number - friction factor lookup table
-Redata = 4000:1000:2e5;
+Redata = 4000:1000:1e6;
 syms RE F
 eqn = 1/sqrt(F) == 1.930*log10(RE*sqrt(F))-0.537;
 fddata = double(subs(solve(eqn,F),RE,Redata));
@@ -127,8 +123,8 @@ Twg = zeros(1,length(x)); % coating surfact temperature, K
 Twi = zeros(1,length(x)); % hot side wall temperature, K
 Twl = zeros(1,length(x)); % coolant side wall temperature, K
 Tb = zeros(1,length(x)); % coolant boiling point, K
-Tl = zeros(1,length(x)); Tl(end) = 60; % coolant temperature, K
-Pl = zeros(1,length(x)); Pl(end) = 500*6894.76; % coolant pressure, Pa
+Tl = zeros(1,length(x)); Tl(end) = 179; % coolant temperature, K
+Pl = zeros(1,length(x)); Pl(end) = 450*6894.76; % coolant pressure, Pa
 vl = zeros(1,length(x)); % coolant velocity, m/s
 Rel = zeros(1,length(x)); % coolant Reynolds number
 f = zeros(1,length(x)); % Darcy friction factor
@@ -140,7 +136,7 @@ multi = zeros(1,length(x)); % effective coolant wetted area multiplier
 U = zeros(1,length(x)); % overall heat transfer coefficient, W/m2-K
 dq = zeros(1,length(x)); % heat transfer over area element, W
 
-O2 = Oxygen();
+CH4 = Methane();
 
 
 %% Run simulation
@@ -160,12 +156,12 @@ for i = length(x):-1:1 % run through the entire engine
     r = Prg^(1/3); % recovery factor
     Taw(i) = Tg(i)+(Tg0-Tg(i))*r; % adiabatic wall temperature, K
     
-    set(O2,'T',Tl(i),'P',Pl(i));
-    cpl = cp_mass(O2); % coolant specific heat, J/kg-K
-    rhol = density(O2); % coolant density, kg/m3
-    vl(i) = mdotl/rhol/(n*Ap); % coolant velocity, m/s
-    mul = LoxTransport.mu(Tl(i),Pl(i))/10^6; % coolant viscosity, Pa-s
-    kl = LoxTransport.k(Tl(i),Pl(i)); % coolant thermal conductivity, W/m-K
+    set(CH4,'T',Tl(i),'P',Pl(i));
+    cpl = cp_mass(CH4); % coolant specific heat, J/kg-K
+    rhol = density(CH4); % coolant density, kg/m3
+    vl(i) = mdotl/rhol/(n*Ap(i)); % coolant velocity, m/s
+    mul = GCH4Transport.mu(Tl(i),Pl(i))/10^6; % coolant viscosity, Pa-s
+    kl = GCH4Transport.k(Tl(i),Pl(i)); % coolant thermal conductivity, W/m-K
     Prl = mul*cpl/kl; % coolant Prandtl number
     Rel(i) = rhol*vl(i)*Dh(i)/mul; % coolant Reynolds number
     
@@ -178,21 +174,19 @@ for i = length(x):-1:1 % run through the entire engine
         if j == 1
             eta = 0.5; % inital guess fin efficiency
         else
-            eigen = sqrt(2*hl(i)/kSS/tf); % fin equation eigenvalue
+            eigen = sqrt(2*hl(i)/k718/tf); % fin equation eigenvalue
             eta = tanh(eigen*b(i))/(eigen*b(i)); % fin efficiency
         end
         multi(i) = (a(i)/(a(i)+tf)+2*b(i)/(a(i)+tf)*eta); % effective coolant wetted area multiplier
         hl(i) = 0.0185*Rel(i)^0.8*Prl^0.4*(Tl(i)/Twl_old)^0.1*kl/Dh(i); % liquid heat transfer coefficient, W/m2-K
         hleff(i) = hl(i)*multi(i); % effective liquid heat transfer coefficient, W/m2-K
-        U(i) = 1/(1/hg(i)+tc/kc+tw/kSS+1/hleff(i)); % overall heat transfer coefficient, W/m2-K
+        U(i) = 1/(1/hg(i)+tw/k718+1/hleff(i)); % overall heat transfer coefficient, W/m2-K
         dq(i) = (Taw(i)-Tl(i))*U(i)*dA(i); % heat transfer over area element, W
         Twg_old = Taw(i)-dq(i)/hg(i)/dA(i);
         Twl_old = Tl(i)+dq(i)/hleff(i)/dA(i);
     end
-    Twg(i) = Twg_old; % coating surface temperature, K
-    Twl(i) = Twl_old; % liquid side wall temperatue, K
-    Twi(i) = Twg(i)-dq(i)/(kc/tc)/dA(i); % hot side wall temperature, K
-    Tb(i) = LoxBoiling.T(Pl(i)); % coolant boiling point, K
+    Twg(i) = Twg_old; % hot side wall temperature, K
+    Twl(i) = Twl_old; % coolant side wall temperatue, K
     f(i) = interp1(Redata,fddata,Rel(i),'spline'); % Darcy friction factor
     dp = dl(i)*f(i)*rhol/2*vl(i)^2/Dh(i); % coolant pressure drop, Pa
     if i > 1
@@ -209,18 +203,15 @@ set(gcf,'defaultlinelinewidth',2,'defaultaxesfontsize',14)
 yyaxis left
 hold on
 plot(x,Twg,'-','color','#EDB120')
-plot(x,Twi,'-','color','#77AC30')
 plot(x,Twl,'-','color','#4DBEEE')
-plot(x,Tb+50,'--','color','#4DBEEE')
 plot(x,Tl,'-','color','#0072BD')
-plot(x,Tb,'--','color','#0072BD')
 hold off
 ylabel('Temperature (K)')
 yyaxis right
 plot(x,D/2)
 ylabel('Engine inner diameter (m)')
 xlabel('Downstream location (m)')
-legend('Coating surface','Wall surface (hot)','Wall surface (cold)','Film boiling limit','Coolant','Boiling point','location','northeast')
+legend('Wall surface (hot)','Wall surface (cold)','Coolant','location','northeast')
 
 figure
 set(gcf,'defaultlinelinewidth',2,'defaultaxesfontsize',14)
